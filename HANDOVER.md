@@ -276,11 +276,12 @@ foreground process group).
 - **The app daemon listens on all interfaces.** That is what makes Wi-Fi access
   possible, but it also means the port is exposed to the local network; only
   public-key auth is enabled and password auth is off (`-s`).
-- **Web file server** on port 8080 (`http://<device-ip>:8080/`): BusyBox
-  `httpd` serving `/data/local/tmp/linux/www` with a file browser and upload
-  form (CGI). Started automatically by the boot APK and by `start-ssh.sh`.
-  Uploads go through `cgi-bin/upload.cgi` (raw POST body). Only for trusted
-  LANs — there is no authentication.
+- **Web file server + chat** on port 8080 (`http://<device-ip>:8080/`): BusyBox
+  `httpd` serving `/data/local/tmp/linux/www` with a file browser, upload form,
+  and a simple chat room (CGI, messages stored on device, auto-refresh).
+  Started automatically by the boot APK and by `start-ssh.sh`. Uploads go through
+  `cgi-bin/upload.cgi` (raw POST body). Only for trusted LANs — there is no
+  authentication.
 - **Only one daemon can own 2222.** `deploy.ps1` and `connect.ps1` detect an
   existing listener instead of fighting over the port; uid 2000 cannot kill the
   app daemon.
@@ -316,6 +317,6 @@ device/deploy.ps1        push everything and start sshd
 device/build-dropbear.sh cross-build dropbear with zig (no make/gcc)
 device/dropbear/         ztpw.c + the two source patches
 device/fs/               profile, linux.sh, start-ssh.sh
-device/fs/www/           index.html, cgi-bin/{browse,upload}.cgi (file server)
+device/fs/www/           index.html, cgi-bin/{browse,upload,chat}.cgi (web file server + chat)
 device/autostart/        boot APK: AndroidManifest, Java sources, build + install scripts
 ```

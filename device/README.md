@@ -65,7 +65,19 @@ adb forward tcp:2323 tcp:2323
 # then: telnet 127.0.0.1 2323
 ```
 
-## After a reboot
+## Web file server + chat
+
+Once the device is on your network, open `http://<device-ip>:8080/` in any
+browser:
+
+- **File browser** (`/cgi-bin/browse.cgi`) — list and download files
+- **Upload** — pick a file and upload via the browser (stored in the web root)
+- **Chat room** (`/cgi-bin/chat.cgi`) — simple text chat, messages stored on
+  the device, auto-refreshes every 5 seconds
+
+The server runs on port 8080 (non-privileged) and starts automatically with
+the boot APK and `start-ssh.sh`. Files are stored in
+`/data/local/tmp/linux/www/`. Use `adb push` or SSH to add files in bulk.
 
 The device comes back as `19d2:0083` (no ADB), but `/data` is untouched. One
 command handles the whole recovery:
