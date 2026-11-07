@@ -84,6 +84,22 @@ foreach ($name in 'profile', 'linux.sh', 'start-ssh.sh') {
 }
 Invoke-Adb shell "chmod 755 $L/linux.sh $L/start-ssh.sh" | Out-Null
 
+Write-Host '== installing web files'
+$www = Join-Path $here 'fs\www'
+if (Test-Path $www) {
+    Invoke-Adb shell "mkdir -p $L/www/cgi-bin" | Out-Null
+    Get-ChildItem (Join-Path $www '*') -File | ForEach-Object {
+        $dest = "$L/www/$($_.Name)"
+        Push-File $_.FullName $dest
+    }
+    Get-ChildItem (Join-Path $www 'cgi-bin' '*') -File -ErrorAction SilentlyContinue | ForEach-Object {
+        $dest = "$L/www/cgi-bin/$($_.Name)"
+        Push-File $_.FullName $dest
+        Invoke-Adb shell "chmod 755 $dest" | Out-Null
+    }
+    Write-Host '   web root ready'
+}
+
 Write-Host '== installing dropbear'
 if (-not $BuildDir) { $BuildDir = Join-Path $root 'dropbear-2022.83' }
 if (-not (Test-Path (Join-Path $BuildDir 'dropbear'))) {

@@ -21,5 +21,8 @@ export PATH=$L/bin:$PATH
 export TERM=xterm
 export ENV=$L/etc/profile
 
+# Start the file server too (port 8080, non-privileged).
+$L/bin/busybox httpd -p 8080 -h $L/www 2>/dev/null
+
 exec $L/sbin/dropbear -r $L/etc/dropbear_rsa_host_key \
 	-p 127.0.0.1:2222 -s -P $L/dropbear.pid "$@"

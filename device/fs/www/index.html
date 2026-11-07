@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html><head><title>ZTE V9 File Server</title>
+<style>
+body{font-family:sans-serif;margin:0;background:#1a1a2e;color:#eee}
+.header{background:#16213e;padding:20px;text-align:center}
+.header h1{color:#4fc3f7;margin:0}
+.container{max-width:800px;margin:20px auto;padding:0 20px}
+.card{background:#16213e;border-radius:8px;padding:20px;margin:10px 0}
+a{color:#4fc3f7;text-decoration:none}
+a:hover{text-decoration:underline}
+.btn{display:inline-block;background:#4fc3f7;color:#1a1a2e;padding:10px 20px;border-radius:5px;margin:5px 0;border:none;cursor:pointer;font-size:1em}
+.info{color:#aaa;font-size:0.9em}
+#status{margin-top:10px;padding:10px;border-radius:5px;display:none}
+.ok{background:#1b5e20;color:#fff}
+.err{background:#b71c1c;color:#fff}
+input[type=file]{margin:10px 0}
+</style></head><body>
+<div class="header"><h1>ZTE V9 File Server</h1><p class="info">BusyBox httpd on ARMv6 / Android 2.1</p></div>
+<div class="container">
+<div class="card">
+<h2>File Browser</h2>
+<p>Browse and download files from the device.</p>
+<a class="btn" href="/cgi-bin/browse.cgi">Open File Browser</a>
+</div>
+<div class="card">
+<h2>Upload a File</h2>
+<input type="file" id="fileInput">
+<br>
+<button class="btn" onclick="upload()">Upload</button>
+<div id="status"></div>
+</div>
+<div class="card">
+<h2>Device Info</h2>
+<p class="info">CPU: ARMv6 600MHz | RAM: 424MB | OS: Android 2.1 | Kernel: 2.6.29</p>
+</div>
+</div>
+<script>
+function upload() {
+    var file = document.getElementById('fileInput').files[0];
+    if (!file) { showStatus('No file selected', false); return; }
+    var status = document.getElementById('status');
+    status.style.display = 'block';
+    status.className = '';
+    status.textContent = 'Uploading ' + file.name + '...';
+    var reader = new FileReader();
+    reader.onload = function(e) {
+        fetch('/cgi-bin/upload.cgi?name=' + encodeURIComponent(file.name), {
+            method: 'POST',
+            body: e.target.result
+        }).then(function(r) { return r.text(); })
+        .then(function(t) { showStatus(t, true); })
+        .catch(function(err) { showStatus('Error: ' + err, false); });
+    };
+    reader.readAsArrayBuffer(file);
+}
+function showStatus(msg, ok) {
+    var s = document.getElementById('status');
+    s.style.display = 'block';
+    s.className = ok ? 'ok' : 'err';
+    s.textContent = msg;
+}
+</script></body></html>

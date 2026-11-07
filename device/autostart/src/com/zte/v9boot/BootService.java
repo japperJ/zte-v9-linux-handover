@@ -88,6 +88,11 @@ public class BootService extends Service {
         } catch (Throwable t) {
             Log.e(TAG, "dropbear start failed: " + t);
         }
+        try {
+            ensureHttpd();
+        } catch (Throwable t) {
+            Log.e(TAG, "httpd start failed: " + t);
+        }
         // Sticky so that a low-memory kill also restarts the daemon check.
         return START_STICKY;
     }
@@ -218,6 +223,31 @@ public class BootService extends Service {
             Log.i(TAG, "dropbear running, pid " + readPid(pidFile));
         } else {
             Log.e(TAG, "dropbear did not start; see " + new File(h, "dropbear.log"));
+        }
+    }
+
+    private void ensureHttpd() throws Exception {
+        File h = home();
+        // Check if port 8080 is already listening.
+        try {
+            java.net.Socket s = new java.net.Socket("127.0.0.1", 8080);
+            s.close();
+            Log.i(TAG, "httpd already listening on 8080");
+            return;
+        } catch (Exception e) {
+            // not listening, start it
+        }
+        String www = "/data/local/tmp/linux/www";
+        String script = "exec /data/local/tmp/linux/bin/busybox httpd -p 8080 -h " + www;
+        Log.i(TAG, "starting httpd on 0.0.0.0:8080");
+        Runtime.getRuntime().exec(new String[] { "/data/local/tmp/linux/bin/sh", "-c", script });
+        Thread.sleep(1000);
+        try {
+            java.net.Socket s = new java.net.Socket("127.0.0.1", 8080);
+            s.close();
+            Log.i(TAG, "httpd running on 8080");
+        } catch (Exception e) {
+            Log.e(TAG, "httpd did not start");
         }
     }
 
