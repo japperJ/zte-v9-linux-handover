@@ -40,33 +40,21 @@ fi
 del_id=""
 toggle_id=""
 clear_done=0
-case "$QUERY_STRING" in
-    *delete=*) del_id="${QUERY_STRING#*delete=}"; del_id="${del_id%%&*}" ;;
-esac
-case "$QUERY_STRING" in
-    *toggle=*) toggle_id="${QUERY_STRING#*toggle=}"; toggle_id="${toggle_id%%&*}" ;;
-esac
-case "$QUERY_STRING" in
-    *clear=1*) clear_done=1 ;;
-esac
-case "$QUERY_STRING" in
-    *sync=1*) sync_mode=1 ;;
-    *) sync_mode=0 ;;
-esac
+sync_mode=0
+case "$QUERY_STRING" in *delete=*) del_id="${QUERY_STRING#*delete=}"; del_id="${del_id%%&*}" ;; esac
+case "$QUERY_STRING" in *toggle=*) toggle_id="${QUERY_STRING#*toggle=}"; toggle_id="${toggle_id%%&*}" ;; esac
+case "$QUERY_STRING" in *clear=1*) clear_done=1 ;; esac
+case "$QUERY_STRING" in *sync=1*) sync_mode=1 ;; esac
 
-# AJAX sync endpoint: client sends full grocery data to update server
+# AJAX sync endpoint
 if [ "$sync_mode" = "1" ]; then
     if [ -n "$POSTDATA" ]; then
         raw_data=$(echo "$POSTDATA" | /data/local/tmp/linux/bin/busybox sed -n 's/^data=//p')
-        # URL-decode: use the urldecode function (handles %XX and +)
-        decoded=$(urldecode "$raw_data")
-        # Replace ; separator with newlines (avoids command substitution stripping newlines)
-        echo "$decoded" | /data/local/tmp/linux/bin/busybox tr ';' '\n' > "$GROC" 2>/dev/null
+        urldecode "$raw_data" | /data/local/tmp/linux/bin/busybox tr ';' '\n' > "$GROC" 2>/dev/null
     fi
     echo "Content-type: text/plain; charset=UTF-8"
     echo "Access-Control-Allow-Origin: *"
     echo ""
-    # Return current server state
     if [ -f "$GROC" ]; then
         /data/local/tmp/linux/bin/busybox cat "$GROC"
     fi
@@ -182,8 +170,8 @@ echo "var DIRTY_KEY='pandp_groceries_dirty';"
 echo "var SERVER='/cgi-bin/grocery.cgi';"
 echo "function parseItem(line){var p1=line.indexOf('|');var p2=line.indexOf('|',p1+1);var p3=line.indexOf('|',p2+1);if(p1<0||p2<0||p3<0)return null;return{id:line.substring(0,p1),name:line.substring(p1+1,p2),qty:line.substring(p2+1,p3),done:line.substring(p3+1)==='1'};}"
 echo "function escHtml(s){var d=document.createElement('div');d.textContent=s;return d.innerHTML;}"
-echo "function itemsToText(arr){return arr.map(function(it){return it.id+'|'+it.name+'|'+it.qty+'|'+(it.done?'1':'0');}).join('\\n');}"
-echo "function textToItems(txt){var arr=[];var lines=txt.split('\\n');for(var i=0;i<lines.length;i++){var l=lines[i].trim();if(!l)continue;var p=parseItem(l);if(p)arr.push(p);}return arr;}"
+echo "function itemsToText(arr){return arr.map(function(it){return it.id+'|'+it.name+'|'+it.qty+'|'+(it.done?'1':'0');}).join('\n');}"
+echo "function textToItems(txt){var arr=[];var lines=txt.split('\n');for(var i=0;i<lines.length;i++){var l=lines[i].trim();if(!l)continue;var p=parseItem(l);if(p)arr.push(p);}return arr;}"
 echo "function loadLocal(){try{var d=localStorage.getItem(STORAGE_KEY);if(d){items=textToItems(d);}var dd=localStorage.getItem(DIRTY_KEY);return dd==='1';}catch(e){return false;}}"
 echo "function saveLocal(){try{localStorage.setItem(STORAGE_KEY,itemsToText(items));}catch(e){}}"
 echo "function loadServerSnapshot(){try{return localStorage.getItem(SERVER_KEY)||'';}catch(e){return '';}}"
@@ -198,9 +186,9 @@ echo "function delItem(id){items=items.filter(function(it){return it.id!==id;});
 echo "function clearDone(){if(!confirm('Remove all purchased items?'))return;items=items.filter(function(it){return !it.done;});saveLocal();render();setDirty(true);syncToServer();}"
 echo "function syncToServer(){var data=itemsToText(items);fetch(SERVER+'?sync=1',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'data='+encodeURIComponent(data)}).then(function(r){return r.text();}).then(function(t){saveServerSnapshot(t);setDirty(false);setSyncStatus('Synced with server','sync-ok');}).catch(function(e){setSyncStatus('Offline - changes saved locally','sync-warn');});}"
 echo "function showConflict(serverItems){var box=document.getElementById('conflictbox');var serverText=serverItems.map(function(it){return it.id+'|'+it.name+'|'+it.qty+'|'+(it.done?'1':'0');}).join('\\n');var localText=itemsToText(items);var html='<div class=\"conflict\"><h3>Sync Conflict Detected</h3>';html+='<p>Server and local data differ. Choose which to keep:</p>';html+='<div class=\"btns\">';html+='<button class=\"btn-server\" onclick=\"resolveConflict(\\'server\\')\">Use Server ('+serverItems.length+' items)</button>';html+='<button class=\"btn-local\" onclick=\"resolveConflict(\\'local\\')\">Use Local ('+items.length+' items)</button>';html+='<button class=\"btn-merge\" onclick=\"resolveConflict(\\'merge\\')\">Merge Both</button>';html+='</div></div>';box.innerHTML=html;box.style.display='block';}"
-echo "function resolveConflict(choice){var box=document.getElementById('conflictbox');box.style.display='none';if(choice==='server'){/* use server data */}else if(choice==='local'){syncToServer();setDirty(false);}else if(choice==='merge'){/* merge: add items from server not in local */var serverItems=lastServerItems;var localIds=items.map(function(it){return it.id;});for(var i=0;i<serverItems.length;i++){if(localIds.indexOf(serverItems[i].id)<0){items.push(serverItems[i]);}}saveLocal();render();syncToServer();setDirty(false);}if(choice==='server'||choice==='local'){if(choice==='server'){items=lastServerItems;saveLocal();render();setDirty(false);saveServerSnapshot(itemsToText(items));}setSyncStatus('Resolved',choice==='server'?'sync-ok':'sync-warn');}}"
+echo "function resolveConflict(choice){var box=document.getElementById('conflictbox');box.style.display='none';if(choice==='server'){items=lastServerItems;saveLocal();render();saveServerSnapshot(itemsToText(items));setDirty(false);setSyncStatus('Resolved','sync-ok');}else if(choice==='local'){syncToServer();setDirty(false);setSyncStatus('Resolved','sync-ok');}else if(choice==='merge'){var serverItems=lastServerItems;var localIds=items.map(function(it){return it.id;});for(var i=0;i<serverItems.length;i++){if(localIds.indexOf(serverItems[i].id)<0){items.push(serverItems[i]);}}saveLocal();render();syncToServer();setDirty(false);setSyncStatus('Resolved','sync-ok');}}"
 echo "var lastServerItems=[];"
-echo "function loadFromServer(){fetch(SERVER+'?ajax=1').then(function(r){return r.text();}).then(function(t){var serverItems=textToItems(t);lastServerItems=serverItems;var serverText=t.trim();var localText=itemsToText(items).trim();var lastServer=loadServerSnapshot().trim();var dirty=isDirty();if(serverText!==localText&&dirty&&lastServer!==''&&serverText!==lastServer){showConflict(serverItems);}else if(serverText!==localText){if(dirty){/* local changed, server didn't - push local (syncToServer handles snapshot+dirty) */syncToServer();}else{/* server changed, local didn't - pull server */items=serverItems;saveLocal();render();saveServerSnapshot(serverText);setDirty(false);setSyncStatus('Synced with server','sync-ok');}else{saveServerSnapshot(serverText);setDirty(false);setSyncStatus('Synced with server','sync-ok');}}).catch(function(e){setSyncStatus('Offline - using local data','sync-warn');});}"
+echo "function loadFromServer(){fetch(SERVER+'?ajax=1').then(function(r){return r.text();}).then(function(t){var serverItems=textToItems(t);lastServerItems=serverItems;var serverText=t.trim();var localText=itemsToText(items).trim();var lastServer=loadServerSnapshot().trim();var dirty=isDirty();if(serverText!==localText&&dirty&&lastServer!==''&&serverText!==lastServer){showConflict(serverItems);}else if(serverText!==localText){if(dirty){syncToServer();}else{items=serverItems;saveLocal();render();saveServerSnapshot(serverText);setDirty(false);setSyncStatus('Synced with server','sync-ok');}}else{saveServerSnapshot(serverText);setDirty(false);setSyncStatus('Synced with server','sync-ok');}}).catch(function(e){setSyncStatus('Offline - using local data','sync-warn');});}"
 echo "window.onload=function(){loadLocal();render();setSyncStatus('Loading...',false);loadFromServer();document.getElementById('itemname').addEventListener('keydown',function(e){if(e.key==='Enter')addItem();});}"
 echo "</script>"
 echo "<script>if('serviceWorker' in navigator){navigator.serviceWorker.register('/sw.js').catch(function(){});}</script>"
