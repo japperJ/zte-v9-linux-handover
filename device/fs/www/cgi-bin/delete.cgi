@@ -2,18 +2,27 @@
 L=/data/local/tmp/linux
 WWW="$L/www"
 
-# Get filename from query string
+# Parse params
 fname=""
+curpath=""
+isdir=0
 case "$QUERY_STRING" in
-  file=*) fname="${QUERY_STRING#file=}" ;;
+  *file=*) fname="${QUERY_STRING#*file=}"; fname="${fname%%&*}" ;;
+esac
+case "$QUERY_STRING" in
+  *path=*) curpath="${QUERY_STRING#*path=}"; curpath="${curpath%%&*}" ;;
+esac
+case "$QUERY_STRING" in
+  *dir=1*) isdir=1 ;;
 esac
 
 # URL-decode
 fname=$(/data/local/tmp/linux/bin/busybox echo "$fname" | /data/local/tmp/linux/bin/busybox sed 's/%20/ /g; s/+/ /g')
-# Security: strip path separators and dangerous sequences
+curpath=$(/data/local/tmp/linux/bin/busybox echo "$curpath" | /data/local/tmp/linux/bin/busybox sed 's/%20/ /g; s/%2F/\//g; s/+/ /g')
+# Security
+curpath=$(/data/local/tmp/linux/bin/busybox echo "$curpath" | /data/local/tmp/linux/bin/busybox sed 's/\.\.//g; s|^/||; s|/$||')
 fname=$(/data/local/tmp/linux/bin/busybox echo "$fname" | /data/local/tmp/linux/bin/busybox sed 's/\.\.//g; s/\///g; s/\\//g')
 
-# Validate
 if [ -z "$fname" ]; then
     echo "Content-type: text/plain; charset=UTF-8"
     echo "Access-Control-Allow-Origin: *"
@@ -22,11 +31,22 @@ if [ -z "$fname" ]; then
     exit 0
 fi
 
-target="$WWW/$fname"
+# Build full path
+if [ -z "$curpath" ]; then
+    target="$WWW/$fname"
+else
+    target="$WWW/$curpath/$fname"
+fi
 
-# Security: ensure target is inside www and is a regular file (not cgi-bin)
+# Security: ensure inside WWW
+case "$target" in
+    $WWW*) ;;
+    *) target="$WWW/$fname" ;;
+esac
+
+# Block system files
 case "$fname" in
-    index.html|browse.cgi|upload.cgi|chat.cgi|delete.cgi) 
+    index.html|browse.cgi|upload.cgi|chat.cgi|delete.cgi|mkdir.cgi)
         echo "Content-type: text/plain; charset=UTF-8"
         echo "Access-Control-Allow-Origin: *"
         echo ""
@@ -35,33 +55,62 @@ case "$fname" in
         ;;
 esac
 case "$fname" in
-    cgi-bin*) 
+    cgi-bin)
         echo "Content-type: text/plain; charset=UTF-8"
         echo "Access-Control-Allow-Origin: *"
         echo ""
-        echo "ERROR: cannot delete from cgi-bin"
+        echo "ERROR: cannot delete cgi-bin"
         exit 0
         ;;
 esac
 
-if [ ! -f "$target" ]; then
-    echo "Content-type: text/plain; charset=UTF-8"
-    echo "Access-Control-Allow-Origin: *"
-    echo ""
-    echo "ERROR: file not found: $fname"
-    exit 0
-fi
-
-# Delete the file
-/data/local/tmp/linux/bin/busybox rm "$target" 2>/dev/null
-if [ -f "$target" ]; then
-    echo "Content-type: text/plain; charset=UTF-8"
-    echo "Access-Control-Allow-Origin: *"
-    echo ""
-    echo "ERROR: failed to delete $fname"
+if [ "$isdir" = "1" ]; then
+    if [ ! -d "$target" ]; then
+        echo "Content-type: text/plain; charset=UTF-8"
+        echo "Access-Control-Allow-Origin: *"
+        echo ""
+        echo "ERROR: folder not found: $fname"
+        exit 0
+    fi
+    # Only delete if empty
+    contents=$(/data/local/tmp/linux/bin/busybox ls -A "$target" 2>/dev/null)
+    if [ -n "$contents" ]; then
+        echo "Content-type: text/plain; charset=UTF-8"
+        echo "Access-Control-Allow-Origin: *"
+        echo ""
+        echo "ERROR: folder not empty: $fname"
+        exit 0
+    fi
+    /data/local/tmp/linux/bin/busybox rmdir "$target" 2>/dev/null
+    if [ -d "$target" ]; then
+        echo "Content-type: text/plain; charset=UTF-8"
+        echo "Access-Control-Allow-Origin: *"
+        echo ""
+        echo "ERROR: failed to delete folder $fname"
+    else
+        echo "Content-type: text/plain; charset=UTF-8"
+        echo "Access-Control-Allow-Origin: *"
+        echo ""
+        echo "OK: deleted folder $fname"
+    fi
 else
-    echo "Content-type: text/plain; charset=UTF-8"
-    echo "Access-Control-Allow-Origin: *"
-    echo ""
-    echo "OK: deleted $fname"
+    if [ ! -f "$target" ]; then
+        echo "Content-type: text/plain; charset=UTF-8"
+        echo "Access-Control-Allow-Origin: *"
+        echo ""
+        echo "ERROR: file not found: $fname"
+        exit 0
+    fi
+    /data/local/tmp/linux/bin/busybox rm "$target" 2>/dev/null
+    if [ -f "$target" ]; then
+        echo "Content-type: text/plain; charset=UTF-8"
+        echo "Access-Control-Allow-Origin: *"
+        echo ""
+        echo "ERROR: failed to delete $fname"
+    else
+        echo "Content-type: text/plain; charset=UTF-8"
+        echo "Access-Control-Allow-Origin: *"
+        echo ""
+        echo "OK: deleted $fname"
+    fi
 fi
