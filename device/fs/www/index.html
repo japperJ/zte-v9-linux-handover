@@ -1,6 +1,13 @@
 <!DOCTYPE html>
 <html><head><title>PandP Home server</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#16213e">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="PandP">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<link rel="icon" href="/icon-192.png">
 <style>
 *{box-sizing:border-box}
 body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;margin:0;background:#1a1a2e;color:#eee;min-height:100vh}
@@ -15,7 +22,7 @@ a:hover{text-decoration:underline}
 #status{margin-top:10px;padding:10px;border-radius:5px;display:none}
 .ok{background:#1b5e20;color:#fff}
 .err{background:#b71c1c;color:#fff}
-input[type=file]{margin:10px 0;width:100%}
+input[type=file]{display:none} .filebtn{display:inline-block;background:#21262d;color:#58a6ff;padding:10px 20px;border-radius:6px;border:1px solid #30363d;cursor:pointer;font-weight:bold;min-height:44px;margin:10px 0} .filebtn:hover{background:#30363d}
 pre{background:#0d1117;padding:10px;border-radius:5px;overflow-x:auto;font-size:0.95em;white-space:pre-wrap;word-break:break-all}
 @media (max-width:480px){.container{padding:0 8px}.card{padding:12px}.btn{width:100%;text-align:center}}
 </style></head><body>
@@ -28,10 +35,25 @@ pre{background:#0d1117;padding:10px;border-radius:5px;overflow-x:auto;font-size:
 </div>
 <div class="card">
 <h2>Upload a File</h2>
-<input type="file" id="fileInput">
+<label class="filebtn" for="fileInput">Choose file</label><input type="file" id="fileInput"><span id="fname" style="color:#8b949e;margin-left:8px;font-size:0.9em"></span>
 <br>
 <button class="btn" onclick="upload()">Upload</button>
 <div id="status"></div>
+</div>
+<div class="card">
+<h2>Calendar</h2>
+<p>Monthly calendar with events stored on the device.</p>
+<a class="btn" href="/cgi-bin/calendar.cgi">Open Calendar</a>
+</div>
+<div class="card">
+<h2>Grocery List</h2>
+<p>Shopping list for daily groceries. Check off as you buy.</p>
+<a class="btn" href="/cgi-bin/grocery.cgi">Open Grocery List</a>
+</div>
+<div class="card">
+<h2>Task List</h2>
+<p>Simple to-do list stored on the device. Tasks persist across page refreshes.</p>
+<a class="btn" href="/cgi-bin/tasks.cgi">Open Task List</a>
 </div>
 <div class="card">
 <h2>Chat Room</h2>
@@ -44,6 +66,7 @@ pre{background:#0d1117;padding:10px;border-radius:5px;overflow-x:auto;font-size:
 </div>
 </div>
 <script>
+document.getElementById('fileInput').addEventListener('change',function(){var f=this.files[0];document.getElementById('fname').textContent=f?f.name:'No file chosen';});
 function upload() {
     var file = document.getElementById('fileInput').files[0];
     if (!file) { showStatus('No file selected', false); return; }
@@ -68,4 +91,6 @@ function showStatus(msg, ok) {
     s.className = ok ? 'ok' : 'err';
     s.textContent = msg;
 }
-</script></body></html>
+</script>
+<script>if("serviceWorker" in navigator){navigator.serviceWorker.register("/sw.js").catch(function(){});}</script>
+</body></html>

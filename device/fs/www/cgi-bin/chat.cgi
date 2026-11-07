@@ -95,6 +95,10 @@ echo ""
 echo "<!DOCTYPE html><html><head><title>PandP Home server</title>"
 echo "<meta charset='UTF-8'>"
 echo "<meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no'>"
+echo "<link rel='manifest' href='/manifest.json'>"
+echo "<meta name='theme-color' content='#16213e'>"
+echo "<meta name='apple-mobile-web-app-capable' content='yes'>"
+echo "<link rel='apple-touch-icon' href='/icon-192.png'>"
 echo "<style>"
 echo "body{font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;margin:0;background:#0d1117;color:#e6edf3;min-height:100vh;display:flex;flex-direction:column}"
 echo ".header{background:#161b22;padding:12px 16px;text-align:center;border-bottom:1px solid #30363d;flex-shrink:0}"
@@ -172,11 +176,5 @@ echo "function submitMsg(){var m=document.getElementById('msginput').value.trim(
 echo "function refreshMsgs(){fetch('/cgi-bin/chat.cgi?ajax=1').then(function(r){return r.text();}).then(function(t){renderMsgs(t);}).catch(function(e){});}"
 echo "window.onload=function(){if(chatNick){applyNick(chatNick);}else{document.getElementById('overlay').style.display='flex';document.getElementById('nickinput').focus();}refreshMsgs();setInterval(refreshMsgs,4000);}"
 echo "</script>"
+echo "<script>if('serviceWorker' in navigator){navigator.serviceWorker.register('/sw.js').catch(function(){});}</script>"
 echo "</body></html>"
-'@
-[IO.File]::WriteAllText("$env:TEMP\v9-chat.cgi", ($chatCgi -replace "`r`n","`n"), (New-Object System.Text.UTF8Encoding($false)))
-$adb = "C:\Users\jptrs\AppData\Local\Microsoft\WinGet\Packages\Google.PlatformTools_Microsoft.Winget.Source_8wekyb3d8bbwe\platform-tools\adb.exe"
-& $adb -s V9_Telia push "$env:TEMP\v9-chat.cgi" "/data/local/tmp/linux/www/cgi-bin/chat.cgi" 2>&1
-& $adb -s V9_Telia shell 'chmod 755 /data/local/tmp/linux/www/cgi-bin/chat.cgi' 2>&1
-Copy-Item "$env:TEMP\v9-chat.cgi" "C:\Users\jptrs\zte-v9-linux-handover\device\fs\www\cgi-bin\chat.cgi" -Force
-Write-Host "deployed"

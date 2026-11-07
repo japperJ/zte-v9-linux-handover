@@ -73,6 +73,10 @@ browser:
 - **File browser** (`/cgi-bin/browse.cgi`) — list and download files
 - **Upload** — pick a file and upload via the browser (stored in the web root)
 - **Chat room** (`/cgi-bin/chat.cgi`) — simple text chat, messages stored on
+- **Task list** (/cgi-bin/tasks.cgi) - simple to-do list, tasks stored on the device, tap to toggle done
+- **Calendar** (/cgi-bin/calendar.cgi) - monthly calendar with events stored on the device, tap a day to add
+- **Grocery list** (/cgi-bin/grocery.cgi) - shopping list with quantities, check off purchased, clear purchased
+- **PWA**: the site ships a web app manifest and icons, so browsers can 'Add to Home Screen' / install it as an app (HTTPS required for the service worker/offline cache).
   the device, auto-refreshes every 5 seconds
 
 The server runs on port 8080 (non-privileged) and starts automatically with
