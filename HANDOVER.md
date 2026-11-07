@@ -157,11 +157,17 @@ Self-starting is handled on-device by `device/autostart/`, a 8 kB APK
 | Bind | `0.0.0.0:2222`, so it is reachable over Wi-Fi *and* through `adb forward`. Public-key auth only (`-s`). |
 | Wi-Fi | Holds a `WifiLock` and, if not connected, reconnects to the first saved network. No credentials are stored by this app. |
 
-Host key of the app daemon (regenerated if the app's data is cleared):
+Host key of the daemon (shared between the uid-2000 and app-uid daemons, so
+the fingerprint no longer changes when the app restarts):
 
 ```
-SHA256:pUa47nhQLiI2yh+WnxZ/PC/VNHSTEusthIfNhbbJAbw
+SHA256:RtDRTnAWCNAUdtXhKiiTPSov/KAa/8A5z67B1L9pxpc
 ```
+
+The app copies `/data/local/tmp/linux/etc/dropbear_rsa_host_key` into its own
+home on first start (the file is `chmod 644` by `deploy.ps1`); if that file is
+missing it generates a new one. `RESTART_SSH` broadcast kills and restarts the
+daemon, which is how you pick up a new host key without a reboot.
 
 Build and install (Android Studio's JBR + SDK build-tools, no Gradle):
 

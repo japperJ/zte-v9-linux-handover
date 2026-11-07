@@ -98,6 +98,9 @@ if ($haveKey.Trim() -ne 'yes') {
     Write-Host '== generating RSA host key'
     Invoke-Adb shell "$L/sbin/dropbearkey -t rsa -s 2048 -f $L/etc/dropbear_rsa_host_key" | Out-Null
 }
+# The boot APK runs as a different uid and reuses this key so the host
+# fingerprint stays stable. Make it readable to that uid.
+Invoke-Adb shell "chmod 644 $L/etc/dropbear_rsa_host_key" | Out-Null
 
 $pubKeys = @($PublicKeyPath | Where-Object { $_ } | Where-Object { Test-Path $_ })
 if ($pubKeys.Count -eq 0) {
