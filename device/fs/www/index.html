@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html><head><title>PandP Home server</title>
+<html lang="da"><head><title>PandP Home server</title>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="theme-color" content="#16213e">
@@ -8,8 +8,10 @@
 <style>
 *{box-sizing:border-box}
 body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;margin:0;background:#1a1a2e;color:#eee;min-height:100vh}
-.header{background:#16213e;padding:16px;text-align:center}
+.header{background:#16213e;padding:16px;text-align:center;position:relative}
 .header h1{color:#4fc3f7;margin:0;font-size:1.4em}
+.lang-toggle{position:absolute;top:12px;right:12px;background:#21262d;color:#4fc3f7;border:1px solid #30363d;padding:6px 12px;border-radius:6px;cursor:pointer;font-size:0.85em;text-decoration:none;min-height:32px;display:inline-flex;align-items:center}
+.lang-toggle:hover{background:#30363d}
 .container{max-width:900px;margin:16px auto;padding:0 12px}
 .card{background:#16213e;border-radius:8px;padding:16px;margin:10px 0}
 a{color:#4fc3f7;text-decoration:none}
@@ -20,35 +22,85 @@ a:hover{text-decoration:underline}
 </style>
 <script>if('serviceWorker' in navigator){navigator.serviceWorker.register('/sw.js').catch(function(){});}</script>
 </head><body>
-<div class="header"><h1>PandP Home server</h1><p class="info">BusyBox httpd on ARMv6 / Android 2.1</p></div>
+<div class="header"><h1>PandP Home server</h1><a href="#" class="lang-toggle" id="langToggle" onclick="toggleLang();return false;">EN</a></div>
 <div class="container">
-<div class="card">
-<h2>File Browser</h2>
-<p>Browse, upload, and manage files on the device.</p>
-<a class="btn" href="/cgi-bin/browse.cgi">Open File Browser</a>
+<div class="card" data-i18n-card="filebrowser">
+<h2 data-i18n="filebrowser_title">Filbrowser</h2>
+<p data-i18n="filebrowser_desc">Gennemse, upload og administrer filer på enheden.</p>
+<a class="btn" href="/cgi-bin/browse.cgi" data-i18n="filebrowser_btn">Åbn Filbrowser</a>
 </div>
-<div class="card">
-<h2>Chat Room</h2>
-<p>Simple text chat stored on the device. Messages persist across page refreshes.</p>
-<a class="btn" href="/cgi-bin/chat.cgi">Open Chat</a>
+<div class="card" data-i18n-card="chat">
+<h2 data-i18n="chat_title">Chatrum</h2>
+<p data-i18n="chat_desc">Enkel tekstchat gemt på enheden. Beskeder bevares ved genindlæsning.</p>
+<a class="btn" href="/cgi-bin/chat.cgi">Åbn Chat</a>
 </div>
-<div class="card">
-<h2>Calendar</h2>
-<p>Monthly calendar with events stored on the device.</p>
-<a class="btn" href="/cgi-bin/calendar.cgi">Open Calendar</a>
+<div class="card" data-i18n-card="calendar">
+<h2 data-i18n="calendar_title">Kalender</h2>
+<p data-i18n="calendar_desc">Månedlig kalender med begivenheder gemt på enheden.</p>
+<a class="btn" href="/cgi-bin/calendar.cgi">Åbn Kalender</a>
 </div>
-<div class="card">
-<h2>Grocery List</h2>
-<p>Shopping list for daily groceries. Check off as you buy.</p>
-<a class="btn" href="/cgi-bin/grocery.cgi">Open Grocery List</a>
+<div class="card" data-i18n-card="grocery">
+<h2 data-i18n="grocery_title">Indkøbsliste</h2>
+<p data-i18n="grocery_desc">Indkøbsliste til dagligvarer. Afkryds mens du køber.</p>
+<a class="btn" href="/cgi-bin/grocery.cgi">Åbn Indkøbsliste</a>
 </div>
-<div class="card">
-<h2>Device Info</h2>
-<p class="info">CPU: ARMv6 600MHz | RAM: 424MB | OS: Android 2.1 | Kernel: 2.6.29 | IP: 192.168.0.71</p>
+<div class="card" data-i18n-card="device">
+<h2 data-i18n="device_title">Enhedsinfo</h2>
+<p class="info" data-i18n="device_desc">CPU: ARMv6 600MHz | RAM: 424MB | OS: Android 2.1 | Kernel: 2.6.29 | IP: 192.168.0.71</p>
 </div>
-</div></body></html>
+</div>
+<script>
+var I18N = {
+  da: {
+    filebrowser_title: "Filbrowser",
+    filebrowser_desc: "Gennemse, upload og administrer filer på enheden.",
+    filebrowser_btn: "Åbn Filbrowser",
+    chat_title: "Chatrum",
+    chat_desc: "Enkel tekstchat gemt på enheden. Beskeder bevares ved genindlæsning.",
+    chat_btn: "Åbn Chat",
+    calendar_title: "Kalender",
+    calendar_desc: "Månedlig kalender med begivenheder gemt på enheden.",
+    calendar_btn: "Åbn Kalender",
+    grocery_title: "Indkøbsliste",
+    grocery_desc: "Indkøbsliste til dagligvarer. Afkryds mens du køber.",
+    grocery_btn: "Åbn Indkøbsliste",
+    device_title: "Enhedsinfo"
+  },
+  en: {
+    filebrowser_title: "File Browser",
+    filebrowser_desc: "Browse, upload, and manage files on the device.",
+    filebrowser_btn: "Open File Browser",
+    chat_title: "Chat Room",
+    chat_desc: "Simple text chat stored on the device. Messages persist across page refreshes.",
+    chat_btn: "Open Chat",
+    calendar_title: "Calendar",
+    calendar_desc: "Monthly calendar with events stored on the device.",
+    calendar_btn: "Open Calendar",
+    grocery_title: "Grocery List",
+    grocery_desc: "Shopping list for daily groceries. Check off as you buy.",
+    grocery_btn: "Open Grocery List",
+    device_title: "Device Info"
+  }
+};
+function getLang(){return localStorage.getItem('lang')||'da';}
+function setLang(l){localStorage.setItem('lang',l);applyLang(l);}
+function applyLang(l){
+    document.documentElement.lang = l;
+    var btn = document.getElementById('langToggle');
+    btn.textContent = l === 'da' ? 'EN' : 'DA';
+    var t = I18N[l] || I18N.da;
+    document.querySelectorAll('[data-i18n]').forEach(function(el){
+        var key = el.getAttribute('data-i18n');
+        if(t[key]) el.textContent = t[key];
+    });
+}
+function toggleLang(){setLang(getLang()==='da'?'en':'da');}
+window.onload = function(){ applyLang(getLang()); };
+</script>
+</body></html>
 '@
-[IO.File]::WriteAllText("C:\Users\jptrs\zte-v9-linux-handover\device\fs\www\index.html", ($index -replace "`r`n","`n"), (New-Object System.Text.UTF8Encoding($false)))
+[IO.File]::WriteAllText("$env:TEMP\v9-index.html", ($index -replace "`r`n","`n"), (New-Object System.Text.UTF8Encoding($false)))
 $adb = "C:\Users\jptrs\AppData\Local\Microsoft\WinGet\Packages\Google.PlatformTools_Microsoft.Winget.Source_8wekyb3d8bbwe\platform-tools\adb.exe"
-& $adb -s V9_Telia push "C:\Users\jptrs\zte-v9-linux-handover\device\fs\www\index.html" "/data/local/tmp/linux/www/index.html" 2>&1
+& $adb -s V9_Telia push "$env:TEMP\v9-index.html" "/data/local/tmp/linux/www/index.html" 2>&1
+Copy-Item "$env:TEMP\v9-index.html" "C:\Users\jptrs\zte-v9-linux-handover\device\fs\www\index.html" -Force
 Write-Host "done"
