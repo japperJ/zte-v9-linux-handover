@@ -1,0 +1,10 @@
+# Profile for the V9 Linux userspace (sourced via $ENV by addnewvar in dropbear,
+# and explicitly from linux.sh for telnet logins).
+ROOT=/data/local/tmp/linux
+PATH=$ROOT/bin:$ROOT/sbin:/system/bin:/system/xbin
+HOME=$ROOT/root
+TERM=xterm
+PS1='[\u@v9 \W]\$ '
+export ROOT PATH HOME TERM PS1
+alias ll='ls -l'
+alias la='ls -la'

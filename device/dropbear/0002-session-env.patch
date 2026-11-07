@@ -1,0 +1,23 @@
+Subject: [PATCH 2/2] Pass ENV to the session so the login profile is sourced
+
+BusyBox ash only reads $ENV for interactive shells, and dropbear's session
+environment is a fixed allow-list. Adding ENV here makes interactive logins
+pick up /data/local/tmp/linux/etc/profile (prompt, aliases, PATH additions)
+without needing a writable /etc.
+
+--- a/svr-chansession.c
++++ b/svr-chansession.c
+@@ -1012,11 +1012,8 @@
+ 	addnewvar("LOGNAME", ses.authstate.pw_name);
+ 	addnewvar("HOME", ses.authstate.pw_dir);
+ 	addnewvar("SHELL", get_user_shell());
+-	if (getuid() == 0) {
+-		addnewvar("PATH", DEFAULT_ROOT_PATH);
+-	} else {
+-		addnewvar("PATH", DEFAULT_PATH);
+-	}
++	addnewvar("PATH", DEFAULT_PATH);
++	addnewvar("ENV", "/data/local/tmp/linux/etc/profile");
+ 	if (cp != NULL) {
+ 		addnewvar("LANG", cp);
+ 		m_free(cp);

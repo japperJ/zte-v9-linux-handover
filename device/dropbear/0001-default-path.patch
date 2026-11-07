@@ -1,0 +1,18 @@
+Subject: [PATCH 1/2] Set the default child PATH for the on-device Linux tree
+
+dropbear builds a fixed environment for each session (it does not pass its own
+environment through), and PATH comes from DEFAULT_PATH. The upstream default
+"/usr/bin:/bin" does not exist on this device, so every applet lookup failed
+even though the static BusyBox tree is on disk.
+
+--- a/default_options.h
++++ b/default_options.h
+@@ -351,7 +351,7 @@
+ #define DEFAULT_IDLE_TIMEOUT 0
+ 
+ /* The default path. This will often get replaced by the shell */
+-#define DEFAULT_PATH "/usr/bin:/bin"
++#define DEFAULT_PATH "/data/local/tmp/linux/bin:/system/bin:/system/xbin"
+ #define DEFAULT_ROOT_PATH "/usr/sbin:/usr/bin:/sbin:/bin"
+ 
+ #endif /* DROPBEAR_DEFAULT_OPTIONS_H_ */

@@ -1,51 +1,152 @@
-# ZTE V9 (Light Tab) — Linux conversion assessment
+# DEVICE-NOTES — ZTE V9 field notes
 
-## Identification
-- USB serial: `V9_Telia`
-- USB VID:PID (Android/PC-Suite mode): `19d2:0083` (interface class 08 = mass storage / ZTE PC Suite virtual CD-ROM)
-- USB VID:PID (DFU download mode): `19d2:0112` (interface class ff, entered via Vol Down + Power)
-- Manufacturer: ZTE Incorporated
-- Product string: "ZTE HSUSB Device"
-- Model: ZTE V9 / "ZTE Light Tab" (Telia-branded variant), released 2010/2011
-- SoC: Qualcomm MSM7227 (ARM1136EJ-S, ARMv6), 600 MHz, Adreno 200 GPU
-- RAM: 512 MB; ROM: 512 MB (≈170 MB user); microSD up to 32 GB
-- Display: 7" resistive TFT, 800x480
-- OS originally: Android 2.1 (Eclair) → 2.2 (Froyo), kernel 2.6.32
-- Battery: Li-Ion 3400 mAh, removable
+Raw notes from working on the actual hardware. These are the things that cost
+time; most of them contradicted the assumptions in the original handover.
 
-## What was attempted
-1. Connected over USB; device presented as ZTE PC Suite CD-ROM (`19d2:0083`), no ADB interface.
-2. Entered bootloader/download mode with Vol Down + Power → ZTE proprietary DFU mode (`19d2:0112`).
-   - This mode is NOT standard fastboot (no `fastboot devices` response) and NOT Qualcomm EDL (not `05c6:9008`).
-   - It requires the Windows-only **ZTE MultiDL Tool** to flash; no Linux tooling exists for it.
-3. Recovered to Android by removing/reinserting the battery.
-4. Attempted to enable USB debugging (Settings → Applications → Development → USB debugging).
-   - Even after toggling, the USB descriptor still shows only mass-storage class 08 — no ADB interface (class ff).
-   - The `51-android.rules` udev rules do not cover PID `0083`, and the device never exposes an ADB interface.
-   - Conclusion: this Telia-branded build does not expose ADB over USB in its available modes, so remote software control is not possible.
+---
 
-## Feasibility of "running Linux"
-- **Native Linux (postmarketOS / Ubuntu Touch / Debian):** Not feasible.
-  - No postmarketOS device port exists for the ZTE V9 / MSM7227.
-  - ARMv6 (ARM11) is dropped by nearly all modern distributions; only legacy `armel` (soft-float) remains.
-  - No mainline kernel support for this device; would require a full kernel port.
-  - 512 MB RAM / 512 MB storage is below practical minimums for modern Linux.
-- **Chroot on top of Android (Termux / Linux Deploy):** Not feasible here.
-  - Termux requires Android 5+ (API 21); this device runs Android 2.2.
-  - Linux Deploy (old versions) could run an `armel` Debian chroot, but requires root + ADB or in-device app install — neither is reachable with the current USB/debugging situation and bad display.
-- **Debloat Android only:** Possible only with on-device navigation (bad display) and no ADB.
+## 1. Corrections to the original notes
 
-## Remaining paths
-1. **Windows + ZTE MultiDL (DFU mode):** Flash a minimal/custom image. Requires a Windows machine, the MultiDL tool, and a compatible firmware image (none is readily available for V9). High brick risk; recovery only via the same DFU mode.
-2. **Hardware serial console:** MSM7227 devices often have a UART accessible via test points or the headphone jack (with a resistor). Could provide a root shell without USB debugging, but needs soldering/probing and a USB-UART adapter.
-3. **Repurpose the hardware differently:** Use the board as a low-power controller with an external display, or recycle. The resistive 7" panel and MSM7227 are not worth a porting effort in 2026.
-4. **Use a different device:** If you have a newer Android phone/tablet, I can help with Termux+proot (no flash) or postmarketOS (supported devices) instead.
+| Original claim | Reality |
+|---|---|
+| Android 2.2, kernel 2.6.32 | **Android 2.1-update1 (SDK 7), kernel 2.6.29** |
+| "USB debugging is not exposing an ADB interface … do not invest further" | **ADB works.** Running the vendor driver installer switches `19d2:0083` → `19d2:1354`, which is a working ADB composite. |
+| `51-android.rules` does not cover PID `0083` | Irrelevant — `0083` never carries ADB. The ADB PID is `1354`. |
+| Recovery only by removing the battery | True for DFU, but unnecessary: a normal reboot is enough and `/data` survives it. |
 
-## Identifiers to keep
-- Normal mode: `19d2:0083` (ZTE HSUSB Device, serial `V9_Telia`)
-- DFU mode: `19d2:0112` (ZTE HSUSB Device)
-- To enter DFU: power off → hold Volume Down + Power (~5 s).
-- To recover from DFU: remove battery for ~10 s, reinsert, power on.
+---
 
-## Recommendation
-Do not invest further in this device for Linux. If the goal is a small headless Linux box, a Raspberry Pi Zero / used Android phone with unlockable bootloader + postmarketOS support is far more practical.
+## 2. USB and ADB
+
+- **PID map:** `19d2:0083` = default composite (mass storage + virtual CD-ROM),
+  `19d2:1354` = ADB composite, `19d2:0112` = ZTE DFU.
+- **The mode switch is the driver installer.** Re-running
+  `ZTE_HS_Driver_Setup.exe /VERYSILENT /SUPPRESSMSGBOXES /NORESTART /SP-`
+  (elevated) is what puts the device back into `1354`. It works repeatedly.
+- **A reboot always returns to `0083`.** The Linux tree in `/data` is untouched.
+- `C:\WINDOWS\adb.exe` is a 2010 build that shadows the modern one on `PATH`.
+  Use the platform-tools path explicitly, and always `-s V9_Telia`.
+- The device serial is `V9_Telia`, not a hex serial number.
+
+---
+
+## 3. Shell quirks (Android 2.1 `toolbox`)
+
+- `toolbox` has **no `grep`**. The system `grep`, `head`, `wc`, `tail`, `which`
+  binaries exist but return **permission denied** for uid 2000.
+- Therefore: **always call BusyBox applets explicitly** —
+  `$L/bin/busybox grep …`, not `grep …`. This is also why the deployed
+  `PATH` matters so much.
+- `input` is keyevent-only; there is no touch injection through it.
+- `adb shell` allocates a pty. Commands that daemonize make it hang waiting for
+  EOF; fire those detached and ignore the stuck client.
+- **PowerShell quoting:** wrap device-side strings in **single quotes** when
+  they contain `$`, and pass the whole remote command as one argument.
+  PowerShell variable names are case-insensitive — `$T` and `$t` are the same
+  variable, which silently mangles paths.
+
+---
+
+## 4. Storage
+
+| Mount | Size | Notes |
+|---|---|---|
+| `/data` (mtdblock6) | 162.5 MB, 29.5 MB free | the only writable place with exec + symlinks |
+| `/system` | ~92 MB free | read-only, cannot be modified |
+| `/sdcard` | 118 MB FAT | **no exec bit, no symlinks** — useless for a userspace |
+| `/dev` | 212 MB | tmpfs, gone on reboot |
+
+29 MB is the real budget. BusyBox (1.2 MB) + dropbear (280 kB) is fine; a
+Debian rootfs is not.
+
+---
+
+## 5. `/proc` visibility
+
+- `/proc/<pid>/cmdline` is world-readable.
+- `/proc/<pid>/task` ownership reveals the real uid of a process — this is how
+  `adbd`'s uid was measured.
+- `/proc/<pid>/comm` and `/proc/<pid>/limits` are root-only. The latter is why
+  the `RLIMIT_NPROC` state had to be inferred indirectly.
+
+---
+
+## 6. Build environment
+
+- **WSL has `ld` but no `make` and no `gcc`.** Builds have to be driven by
+  explicit compiler invocations from a shell script.
+- **Zig is the compiler:** `zig cc -target arm-linux-musleabi -mcpu=arm1136j_s`.
+  Note the **underscore** in `arm1136j_s`; a hyphen is rejected.
+- Add `-static` at link time for a self-contained binary.
+- Write build scripts with **LF** endings (`-replace "\`r\`n","\`n"`).
+
+### dropbear 2022.83 specifics
+
+- `./configure --host=arm-linux --disable-zlib --disable-lastlog --disable-utmpx
+  --disable-wtmp --disable-syslog --disable-harden` works; only `make` is
+  missing.
+- `default_options_guard.h` is **generated by make**, not by configure:
+  `ifndef_wrapper.sh < default_options.h > default_options_guard.h`. It must be
+  regenerated whenever `default_options.h` changes, otherwise edits silently do
+  nothing (this cost a full debug cycle).
+- Object lists can be lifted from the bundled Makefiles with `awk`; that is what
+  `device/build-dropbear.sh` does.
+- **libtomcrypt** needs `-Isrc/headers/ -I../ -DLTC_SOURCE -I../libtommath/`;
+  `aes_enc.o` is built from `src/ciphers/aes/aes.c` with `-DENCRYPT_ONLY`.
+- **libtommath** needs `-I. -I.. -DLTC_SOURCE` (it pulls in dropbear's
+  `dbmalloc.h`).
+- Linking needs **no `-lcrypt`** — musl provides it.
+
+---
+
+## 7. dropbear runtime facts
+
+- **This build has no syslog.** It prints "(Syslog support not compiled in,
+  using stderr)" and `-E` is not a valid option.
+- **`-F` = foreground.** Daemonizing sends stderr to `/dev/null`, so any
+  authentication error is invisible unless you use `-F`. This is the single
+  most important debugging fact.
+- `-s` disables password auth. `-P` writes a pid file.
+- `-DDEBUG_TRACE` compiles but `TRACE()` is gated at `LOG_DEBUG` and prints
+  nothing at the default log level. Add temporary `fprintf(stderr, …)` calls
+  instead.
+- **Two silent denial paths** exist in `svr-authpubkey.c`; both reject without
+  logging, so they look exactly like "the key is wrong":
+  1. `checkpubkeyperms()` → `~` must be owned by the login uid and must not be
+     group/other-writable. A `drwxrwxrwx` home gives
+     `"… must be owned by user or root, and not writable by group or others"`.
+  2. The `authorized_keys` `fopen`/read path returns failure with no message at
+     all.
+- **The login shell must be listed by `getusershell()`**, otherwise:
+  `"User 'root' has invalid shell, rejected"`. Without `/etc/shells` this has to
+  be answered from `ztpw.c`.
+- Dropbear builds the session environment from a **fixed allow-list** — it does
+  not pass its own environment through. `PATH` comes from `DEFAULT_PATH`
+  (`/usr/bin:/bin` upstream), and `ENV` is not included at all. Both are patched
+  in `device/dropbear/`.
+- Programmatic probes: a client that prints `Server accepts key` and then
+  `Permission denied (publickey)` may have **failed to sign locally** (e.g. a
+  passphrase-protected key in `BatchMode`), which produces no further server
+  log line. Verify with `ssh-keygen -y -f <key>` — it must not prompt.
+
+---
+
+## 8. Android-side dead ends
+
+- **`CVE-2010-EASY` is impossible here.** `adbd`'s `set_user()` has no
+  `RLIMIT_NPROC` check, so `setuid()` cannot fail and the exploit's premise
+  never occurs. Measured at 3,754 live tasks: `adbd pid=13994 uid=2000`.
+- **SIGPIPE/SIGHUP hazard:** killing `adbd` closes the pty and the kernel sends
+  `SIGHUP` to the foreground process group. Any long-running helper must
+  `setsid()` and ignore `HUP/INT/QUIT/TERM/PIPE`.
+- **BusyBox `setsid` applet fails** with "permission denied" on this device.
+- There is no `/etc`, and one cannot be created without root — hence the `$ENV`
+  workaround for the login profile.
+
+---
+
+## 9. Framebuffer
+
+The framebuffer device is readable from uid 2000, so screen captures are
+possible, but the panel is physically damaged — the content is not usable for
+navigation. `fb-*.png` captures from earlier sessions were taken this way.
