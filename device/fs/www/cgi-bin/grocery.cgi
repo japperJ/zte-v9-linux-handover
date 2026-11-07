@@ -50,6 +50,21 @@ case "$QUERY_STRING" in
     *clear=1*) clear_done=1 ;;
 esac
 
+# AJAX sync endpoint: client sends full grocery data to update server
+case "$QUERY_STRING" in
+    *sync=1*) 
+        if [ -n "$POSTDATA" ]; then
+            # Decode and write to server file
+            echo "$POSTDATA" | /data/local/tmp/linux/bin/busybox sed 's/^data=//' | /data/local/tmp/linux/bin/busybox sed 's/%0A/\n/g' > "$GROC" 2>/dev/null
+        fi
+        echo "Content-type: text/plain; charset=UTF-8"
+        echo "Access-Control-Allow-Origin: *"
+        echo ""
+        echo "OK"
+        exit 0
+        ;;
+esac
+
 if [ "$clear_done" = "1" ]; then
     tmp="$GROC.tmp"
     : > "$tmp"
@@ -123,44 +138,22 @@ if [ "$IS_AJAX" = "1" ]; then
     fi
     exit 0
 fi
+
 echo "Content-type: text/html; charset=UTF-8"
 echo "Access-Control-Allow-Origin: *"
 echo ""
 echo "<!DOCTYPE html><html><head><title>PandP Home server</title>"
 echo "<meta charset='UTF-8'>"
 echo "<meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no'>"
-echo "<link rel='manifest' href='/manifest.json'>"
 echo "<meta name='theme-color' content='#16213e'>"
+echo "<link rel='manifest' href='/manifest.json'>"
 echo "<link rel='apple-touch-icon' href='/icon-192.png'>"
-echo "<style>"
-echo "body{font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;margin:0;background:#0d1117;color:#e6edf3;min-height:100vh;display:flex;flex-direction:column}"
-echo ".header{background:#161b22;padding:12px 16px;text-align:center;border-bottom:1px solid #30363d;flex-shrink:0}"
-echo ".header h1{color:#58a6ff;margin:0;font-size:1.2em}"
-echo ".header p{color:#8b949e;margin:4px 0 0;font-size:0.8em}"
-echo ".wrap{max-width:900px;width:100%;margin:0 auto;display:flex;flex-direction:column;flex:1;min-height:0;padding:0 12px}"
-echo ".list{flex:1;overflow-y:auto;padding:12px 0;min-height:200px;-webkit-overflow-scrolling:touch}"
-echo ".item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid #21262d;background:#161b22;margin-bottom:8px;border-radius:8px}"
-echo ".item.done{opacity:0.5}"
-echo ".item.done .iname{text-decoration:line-through;color:#8b949e}"
-echo ".cb{width:24px;height:24px;border-radius:6px;border:2px solid #30363d;background:#0d1117;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#238636;font-weight:bold;flex-shrink:0}"
-echo ".item.done .cb{background:#238636;color:#fff;border-color:#238636}"
-echo ".iname{flex:1;word-wrap:break-word}"
-echo ".iqty{color:#8b949e;font-size:0.85em;min-width:40px;text-align:right}"
-echo ".del{background:#b71c1c;color:#fff;border:none;padding:6px 10px;border-radius:6px;cursor:pointer;font-size:0.8em;min-height:32px;flex-shrink:0}"
-echo ".formbox{background:#161b22;border:1px solid #30363d;border-radius:8px;padding:12px;margin:8px 0}"
-echo ".formbox input{width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid #30363d;border-radius:8px;background:#0d1117;color:#e6edf3;font-size:16px;min-height:44px;margin-bottom:8px}"
-echo ".formbox .row{display:flex;gap:8px}"
-echo ".formbox button{background:#238636;color:#fff;border:none;padding:10px 16px;border-radius:8px;cursor:pointer;font-weight:bold;min-height:44px;flex:1}"
-echo ".formbox .clearbtn{background:#b71c1c}"
-echo ".homebtn{display:inline-block;background:#21262d;color:#58a6ff;padding:6px 16px;border-radius:6px;text-decoration:none;font-weight:bold;margin:8px 0;border:1px solid #30363d;min-height:36px;line-height:24px}"
-echo ".homebtn:hover{background:#30363d}"
-echo ".empty-msg{color:#8b949e;text-align:center;padding:40px 20px;font-style:italic}"
-echo "@media (max-width:480px){.wrap{padding:0 8px}.formbox .row{flex-direction:column}.formbox button{width:100%}.homebtn{width:100%;text-align:center;box-sizing:border-box}}"
-echo "</style>"
+echo "<style>body{font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;margin:0;background:#0d1117;color:#e6edf3;min-height:100vh;display:flex;flex-direction:column} .header{background:#161b22;padding:12px 16px;text-align:center;border-bottom:1px solid #30363d;flex-shrink:0} .header h1{color:#58a6ff;margin:0;font-size:1.2em} .header p{color:#8b949e;margin:4px 0 0;font-size:0.8em} .wrap{max-width:900px;width:100%;margin:0 auto;display:flex;flex-direction:column;flex:1;min-height:0;padding:0 12px} .list{flex:1;overflow-y:auto;padding:12px 0;min-height:200px;-webkit-overflow-scrolling:touch} .item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid #21262d;background:#161b22;margin-bottom:8px;border-radius:8px} .item.done{opacity:0.5} .item.done .iname{text-decoration:line-through;color:#8b949e} .cb{width:24px;height:24px;border-radius:6px;border:2px solid #30363d;background:#0d1117;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#238636;font-weight:bold;flex-shrink:0} .item.done .cb{background:#238636;color:#fff;border-color:#238636} .iname{flex:1;word-wrap:break-word} .iqty{color:#8b949e;font-size:0.85em;min-width:40px;text-align:right} .del{background:#b71c1c;color:#fff;border:none;padding:6px 10px;border-radius:6px;cursor:pointer;font-size:0.8em;min-height:32px;flex-shrink:0} .formbox{background:#161b22;border:1px solid #30363d;border-radius:8px;padding:12px;margin:8px 0} .formbox input{width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid #30363d;border-radius:8px;background:#0d1117;color:#e6edf3;font-size:16px;min-height:44px;margin-bottom:8px} .formbox .row{display:flex;gap:8px} .formbox button{background:#238636;color:#fff;border:none;padding:10px 16px;border-radius:8px;cursor:pointer;font-weight:bold;min-height:44px;flex:1} .formbox .clearbtn{background:#b71c1c} .homebtn{display:inline-block;background:#21262d;color:#58a6ff;padding:6px 16px;border-radius:6px;text-decoration:none;font-weight:bold;margin:8px 0;border:1px solid #30363d;min-height:36px;line-height:24px} .homebtn:hover{background:#30363d} .empty-msg{color:#8b949e;text-align:center;padding:40px 20px;font-style:italic} .syncstatus{font-size:0.75em;color:#8b949e;text-align:center;margin:4px 0} .offline{color:#f0883e} @media (max-width:480px){.wrap{padding:0 8px}.formbox .row{flex-direction:column}.formbox button{width:100%}.homebtn{width:100%;text-align:center;box-sizing:border-box}}</style>"
 echo "</head><body>"
 echo "<div class='header'><h1>PandP Home server</h1><p>Grocery List</p></div>"
 echo "<div style='text-align:center;margin:4px 0'><a href='/' class='homebtn'>Home</a></div>"
 echo "<div class='wrap'>"
+echo "<div class='syncstatus' id='syncstatus'>Loading...</div>"
 echo "<div class='formbox'>"
 echo "<input type='text' id='itemname' placeholder='Item name' autofocus>"
 echo "<input type='text' id='itemqty' placeholder='Quantity (e.g. 2, 500g)'>"
@@ -170,19 +163,32 @@ echo "<button class='clearbtn' onclick='clearDone()'>Clear Purchased</button>"
 echo "</div>"
 echo "</div>"
 echo "<div class='list' id='list'></div>"
-echo "<p style='color:#8b949e;font-size:0.75em;text-align:center'>Tap checkbox to mark purchased.</p>"
+echo "<p style='color:#8b949e;font-size:0.75em;text-align:center'>Tap checkbox to mark purchased. Works offline.</p>"
 echo "</div>"
 echo "<script>"
 echo "var items=[];"
+echo "var STORAGE_KEY='pandp_groceries';"
+echo "var SERVER='/cgi-bin/grocery.cgi';"
 echo "function parseItem(line){var p1=line.indexOf('|');var p2=line.indexOf('|',p1+1);var p3=line.indexOf('|',p2+1);if(p1<0||p2<0||p3<0)return null;return{id:line.substring(0,p1),name:line.substring(p1+1,p2),qty:line.substring(p2+1,p3),done:line.substring(p3+1)==='1'};}"
 echo "function escHtml(s){var d=document.createElement('div');d.textContent=s;return d.innerHTML;}"
-echo "function loadItems(){fetch('/cgi-bin/grocery.cgi?ajax=1').then(function(r){return r.text();}).then(function(t){items=[];var lines=t.split('\\n');for(var i=0;i<lines.length;i++){var l=lines[i].trim();if(!l)continue;var p=parseItem(l);if(p)items.push(p);}render();}).catch(function(e){});}"
+echo "function loadLocal(){try{var d=localStorage.getItem(STORAGE_KEY);if(d){items=[];var lines=d.split('\\n');for(var i=0;i<lines.length;i++){var l=lines[i].trim();if(!l)continue;var p=parseItem(l);if(p)items.push(p);}}}catch(e){}}"
+echo "function saveLocal(){try{var data=items.map(function(it){return it.id+'|'+it.name+'|'+it.qty+'|'+(it.done?'1':'0');}).join('\\n');localStorage.setItem(STORAGE_KEY,data);}catch(e){}}"
+echo "function setSyncStatus(msg,offline){var el=document.getElementById('syncstatus');if(!el)return;el.textContent=msg;el.className='syncstatus'+(offline?' offline':'');}"
+echo "function loadFromServer(){fetch(SERVER+'?ajax=1').then(function(r){return r.text();}).then(function(t){items=[];var lines=t.split('\\n');for(var i=0;i<lines.length;i++){var l=lines[i].trim();if(!l)continue;var p=parseItem(l);if(p)items.push(p);}saveLocal();render();setSyncStatus('Synced with server',false);}).catch(function(e){setSyncStatus('Offline - using local data',true);});}"
+echo "function syncToServer(){var data=items.map(function(it){return it.id+'|'+it.name+'|'+it.qty+'|'+(it.done?'1':'0');}).join('\\n');fetch(SERVER+'?sync=1',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'data='+encodeURIComponent(data)}).then(function(r){return r.text();}).then(function(t){setSyncStatus('Synced with server',false);}).catch(function(e){setSyncStatus('Offline - changes saved locally',true);});}"
 echo "function render(){var el=document.getElementById('list');if(!el)return;if(items.length===0){el.innerHTML=\"<div class='empty-msg'>No items. Add some above!</div>\";return;}var html='';for(var i=0;i<items.length;i++){var it=items[i];html+='<div class=\"item'+(it.done?' done':'')+'\">';html+='<div class=\"cb\" onclick=\"toggleItem(\\''+it.id+'\\')\">'+(it.done?'✓':'')+'</div>';html+='<div class=\"iname\">'+escHtml(it.name)+'</div>';html+='<div class=\"iqty\">'+escHtml(it.qty)+'</div>';html+='<button class=\"del\" onclick=\"delItem(\\''+it.id+'\\')\">x</button>';html+='</div>';}el.innerHTML=html;}"
-echo "function addItem(){var n=document.getElementById('itemname').value.trim();var q=document.getElementById('itemqty').value.trim();if(!n){alert('Item name required');return;}fetch('/cgi-bin/grocery.cgi?ajax=1',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'item='+encodeURIComponent(n)+'&qty='+encodeURIComponent(q)}).then(function(r){return r.text();}).then(function(){document.getElementById('itemname').value='';document.getElementById('itemqty').value='';loadItems();document.getElementById('itemname').focus();}).catch(function(e){alert('Add failed: '+e);});}"
-echo "function toggleItem(id){fetch('/cgi-bin/grocery.cgi?toggle='+encodeURIComponent(id)+'&ajax=1').then(function(r){return r.text();}).then(function(){loadItems();}).catch(function(e){});}"
-echo "function delItem(id){fetch('/cgi-bin/grocery.cgi?delete='+encodeURIComponent(id)+'&ajax=1').then(function(r){return r.text();}).then(function(){loadItems();}).catch(function(e){});}"
-echo "function clearDone(){if(!confirm('Remove all purchased items?'))return;fetch('/cgi-bin/grocery.cgi?clear=1&ajax=1').then(function(r){return r.text();}).then(function(){loadItems();}).catch(function(e){});}"
-echo "window.onload=function(){loadItems();document.getElementById('itemname').addEventListener('keydown',function(e){if(e.key==='Enter')addItem();});}"
+echo "function addItem(){var n=document.getElementById('itemname').value.trim();var q=document.getElementById('itemqty').value.trim();if(!n){alert('Item name required');return;}var id='local_'+Date.now();items.push({id:id,name:n,qty:q||'1',done:false});saveLocal();render();document.getElementById('itemname').value='';document.getElementById('itemqty').value='';document.getElementById('itemname').focus();syncToServer();}"
+echo "function toggleItem(id){for(var i=0;i<items.length;i++){if(items[i].id===id){items[i].done=!items[i].done;break;}}saveLocal();render();syncToServer();}"
+echo "function delItem(id){items=items.filter(function(it){return it.id!==id;});saveLocal();render();syncToServer();}"
+echo "function clearDone(){if(!confirm('Remove all purchased items?'))return;items=items.filter(function(it){return !it.done;});saveLocal();render();syncToServer();}"
+echo "window.onload=function(){loadLocal();render();setSyncStatus('Loading...',false);loadFromServer();document.getElementById('itemname').addEventListener('keydown',function(e){if(e.key==='Enter')addItem();});}"
 echo "</script>"
 echo "<script>if('serviceWorker' in navigator){navigator.serviceWorker.register('/sw.js').catch(function(){});}</script>"
 echo "</body></html>"
+'@
+[IO.File]::WriteAllText("$env:TEMP\v9-grocery.cgi", ($groceryCgi -replace "`r`n","`n"), (New-Object System.Text.UTF8Encoding($false)))
+$adb = "C:\Users\jptrs\AppData\Local\Microsoft\WinGet\Packages\Google.PlatformTools_Microsoft.Winget.Source_8wekyb3d8bbwe\platform-tools\adb.exe"
+& $adb -s V9_Telia push "$env:TEMP\v9-grocery.cgi" "/data/local/tmp/linux/www/cgi-bin/grocery.cgi" 2>&1
+& $adb -s V9_Telia shell 'chmod 755 /data/local/tmp/linux/www/cgi-bin/grocery.cgi' 2>&1
+Copy-Item "$env:TEMP\v9-grocery.cgi" "C:\Users\jptrs\zte-v9-linux-handover\device\fs\www\cgi-bin\grocery.cgi" -Force
+Write-Host "deployed"
