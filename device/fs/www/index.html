@@ -1,19 +1,23 @@
 <!DOCTYPE html>
 <html><head><title>ZTE V9 File Server</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <style>
-body{font-family:sans-serif;margin:0;background:#1a1a2e;color:#eee}
-.header{background:#16213e;padding:20px;text-align:center}
-.header h1{color:#4fc3f7;margin:0}
-.container{max-width:800px;margin:20px auto;padding:0 20px}
-.card{background:#16213e;border-radius:8px;padding:20px;margin:10px 0}
+*{box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;margin:0;background:#1a1a2e;color:#eee;min-height:100vh}
+.header{background:#16213e;padding:16px;text-align:center}
+.header h1{color:#4fc3f7;margin:0;font-size:1.4em}
+.container{max-width:800px;margin:16px auto;padding:0 12px}
+.card{background:#16213e;border-radius:8px;padding:16px;margin:10px 0}
 a{color:#4fc3f7;text-decoration:none}
 a:hover{text-decoration:underline}
-.btn{display:inline-block;background:#4fc3f7;color:#1a1a2e;padding:10px 20px;border-radius:5px;margin:5px 0;border:none;cursor:pointer;font-size:1em}
-.info{color:#aaa;font-size:0.9em}
+.btn{display:inline-block;background:#4fc3f7;color:#1a1a2e;padding:12px 20px;border-radius:5px;margin:5px 0;border:none;cursor:pointer;font-size:1em;font-weight:bold;min-height:44px}
+.info{color:#aaa;font-size:0.85em}
 #status{margin-top:10px;padding:10px;border-radius:5px;display:none}
 .ok{background:#1b5e20;color:#fff}
 .err{background:#b71c1c;color:#fff}
-input[type=file]{margin:10px 0}
+input[type=file]{margin:10px 0;width:100%}
+pre{background:#0d1117;padding:10px;border-radius:5px;overflow-x:auto;font-size:0.85em;white-space:pre-wrap;word-break:break-all}
+@media (max-width:480px){.container{padding:0 8px}.card{padding:12px}.btn{width:100%;text-align:center}}
 </style></head><body>
 <div class="header"><h1>ZTE V9 File Server</h1><p class="info">BusyBox httpd on ARMv6 / Android 2.1</p></div>
 <div class="container">
@@ -33,9 +37,10 @@ input[type=file]{margin:10px 0}
 <h2>Chat Room</h2>
 <p>Simple text chat stored on the device. Messages persist across page refreshes.</p>
 <a class="btn" href="/cgi-bin/chat.cgi">Open Chat</a>
-</div><div class="card">
+</div>
+<div class="card">
 <h2>Device Info</h2>
-<p class="info">CPU: ARMv6 600MHz | RAM: 424MB | OS: Android 2.1 | Kernel: 2.6.29</p>
+<p class="info">CPU: ARMv6 600MHz | RAM: 424MB | OS: Android 2.1 | Kernel: 2.6.29 | IP: 192.168.0.71</p>
 </div>
 </div>
 <script>
