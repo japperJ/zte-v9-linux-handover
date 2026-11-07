@@ -12,6 +12,7 @@ import android.util.Log;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -50,6 +51,20 @@ public class BootService extends Service {
         }
         if ("com.zte.v9boot.WIFI_SETUP".equals(action) || "com.zte.v9boot.WIFI_ADD".equals(action)) {
             try { setupWifi(intent); } catch (Throwable t) { Log.e(TAG, "wifi setup failed: " + t); }
+            return START_NOT_STICKY;
+        }
+        if ("com.zte.v9boot.RESTART_SSH".equals(action) || "com.zte.v9boot.RESTART".equals(action)) {
+            try {
+                File h = home();
+                File pidFile = new File(h, "dropbear.pid");
+                String pid = readPid(pidFile);
+                if (pid != null) {
+                    Log.i(TAG, "killing dropbear pid " + pid);
+                    Runtime.getRuntime().exec(new String[] { "/system/bin/kill", pid });
+                    Thread.sleep(1000);
+                }
+                ensureDropbear();
+            } catch (Throwable t) { Log.e(TAG, "restart failed: " + t); }
             return START_NOT_STICKY;
         }
 
@@ -156,15 +171,24 @@ public class BootService extends Service {
         }
 
         File hostKey = new File(h, "dropbear_rsa_host_key");
-        if (!hostKey.exists()) {
-            Log.i(TAG, "generating host key");
-            runAndWait(new String[] {
-                L + "/bin/sh", "-c",
-                L + "/sbin/dropbearkey -t rsa -s 2048 -f " + q(hostKey.getAbsolutePath())
-            }, 60000);
-            if (!hostKey.exists()) {
-                throw new IllegalStateException("dropbearkey produced no host key");
+        File shared = new File("/data/local/tmp/linux/etc/dropbear_rsa_host_key");
+        if (shared.exists() && shared.canRead()) {
+            // Reuse the shell daemon's host key so the fingerprint stays stable
+            // across the two daemons (no "host key changed" warning for the user).
+            try {
+                InputStream in = new FileInputStream(shared);
+                OutputStream out = new FileOutputStream(hostKey);
+                byte[] buf = new byte[4096];
+                int n;
+                while ((n = in.read(buf)) > 0) out.write(buf, 0, n);
+                out.close(); in.close();
+                Log.i(TAG, "copied shared host key");
+            } catch (Exception e) {
+                Log.w(TAG, "could not copy shared host key: " + e);
+                if (!hostKey.exists()) generateHostKey(hostKey);
             }
+        } else if (!hostKey.exists()) {
+            generateHostKey(hostKey);
         }
     }
 
@@ -332,6 +356,17 @@ public class BootService extends Service {
 
     private static String q2(String s) {
         return "\"" + s + "\"";
+    }
+
+    private void generateHostKey(File hostKey) throws Exception {
+        Log.i(TAG, "generating host key");
+        runAndWait(new String[] {
+            L + "/bin/sh", "-c",
+            L + "/sbin/dropbearkey -t rsa -s 2048 -f " + q(hostKey.getAbsolutePath())
+        }, 60000);
+        if (!hostKey.exists()) {
+            throw new IllegalStateException("dropbearkey produced no host key");
+        }
     }
 
     private static String q(String s) {
