@@ -3,19 +3,13 @@ L=/data/local/tmp/linux
 CHATLOG="$L/www/chat.log"
 MAXMSGS=50
 
-# Parse lang parameter (default: da)
-lang="da"
-case "$QUERY_STRING" in
-  *lang=*) lang="${QUERY_STRING#*lang=}"; lang="${lang%%&*}" ;;
-esac
-case "$lang" in
-  en|da) ;;
-  *) lang="da" ;;
-esac
+# Shared language detection (query param + cookie)
+. /data/local/tmp/linux/www/cgi-bin/lang.inc
 
 # Language strings
 if [ "$lang" = "en" ]; then
     t_title="PandP Home server"
+    t_sub="Chat"
     t_home="Home"
     t_choose_nick="Choose a Nickname"
     t_nick_prompt="You must set a nickname before chatting."
@@ -29,6 +23,7 @@ if [ "$lang" = "en" ]; then
     t_lang_toggle="DA"
 else
     t_title="PandP Home server"
+    t_sub="Chat"
     t_home="Hjem"
     t_choose_nick="Vælg et kaldenavn"
     t_nick_prompt="Du skal vælge et kaldenavn før du kan chatte."
@@ -143,11 +138,12 @@ echo "<meta name='apple-mobile-web-app-capable' content='yes'>"
 echo "<meta name='apple-mobile-web-app-status-bar-style' content='black-translucent'>"
 echo "<link rel='manifest' href='/manifest.json'>"
 echo "<link rel='apple-touch-icon' href='/icon-192.png'>"
+echo "<link rel='stylesheet' href='/nav.css?v=16'>"
 echo "<style>body{font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;margin:0;background:#1a1a2e;color:#eee} .header{background:#16213e;padding:12px 16px;text-align:center;position:relative} .header h1{color:#4fc3f7;margin:0;font-size:1.3em} .lang-toggle{position:absolute;top:10px;right:12px;background:#21262d;color:#4fc3f7;border:1px solid #30363d;padding:4px 10px;border-radius:6px;cursor:pointer;font-size:0.8em;text-decoration:none;min-height:32px;display:inline-flex;align-items:center} .lang-toggle:hover{background:#30363d} .chat{max-width:900px;margin:16px auto;padding:0 16px} .msgs{background:#16213e;border-radius:8px;padding:12px;min-height:300px;max-height:55vh;overflow-y:auto;margin-bottom:12px;-webkit-overflow-scrolling:touch} .msg{padding:6px 0;border-bottom:1px solid #2a2a3e;word-wrap:break-word} .ts{color:#888;font-size:0.8em} .nick{color:#4fc3f7;font-weight:bold} .form{display:flex;gap:8px} .form input[type=text]{flex:1;min-width:0;padding:12px 14px;border:1px solid #444;border-radius:6px;background:#0d1117;color:#eee;font-size:18px;min-height:48px} .form button{background:#4fc3f7;color:#1a1a2e;border:none;padding:12px 20px;border-radius:6px;cursor:pointer;font-weight:bold;font-size:1.05em;min-height:48px;flex-shrink:0} .nickbar{background:#0d1117;padding:10px;border-radius:8px;margin-bottom:12px;display:none;align-items:center;gap:10px;flex-wrap:wrap} .nickbar span{color:#4fc3f7;font-weight:bold} .nickbar button{background:#333;color:#eee;border:1px solid #555;padding:6px 10px;border-radius:4px;cursor:pointer;font-size:0.85em;min-height:36px} .overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.9);display:none;align-items:center;justify-content:center;z-index:100;padding:16px;box-sizing:border-box} .overlay-box{background:#16213e;padding:24px;border-radius:12px;text-align:center;max-width:360px;width:100%} .overlay-box h2{color:#4fc3f7;margin-top:0;font-size:1.2em} .overlay-box input{width:100%;box-sizing:border-box;margin:10px 0;padding:10px;border:1px solid #333;border-radius:4px;background:#0d1117;color:#eee;font-size:1em} .overlay-box button{width:100%;min-height:44px;font-size:1em} .homebtn{display:inline-block;background:#4fc3f7;color:#1a1a2e;padding:8px 20px;border-radius:5px;text-decoration:none;font-weight:bold;margin:10px 0;min-height:44px;line-height:28px} @media (max-width:480px){.chat{padding:0 8px;margin:8px auto}.msgs{padding:8px;min-height:150px}.form{flex-direction:column}.form button{width:100%}.header h1{font-size:1.1em}.homebtn{width:100%;text-align:center;box-sizing:border-box} input{font-size:18px}}</style>"
 echo "<script>if('serviceWorker' in navigator){navigator.serviceWorker.register('/sw.js').catch(function(){});}</script>"
 echo "</head><body>"
-echo "<div class='header'><h1>$t_title</h1><a href='/cgi-bin/chat.cgi?lang=$([ $lang = da ] && echo en || echo da)' class='lang-toggle'>$t_lang_toggle</a></div>"
-echo "<div style='text-align:center;margin:8px 0'><a href='/' class='homebtn'>$t_home</a></div>"
+echo "<div class='header'><h1>PandP Home</h1><p>$t_sub</p></div>"
+echo "<script src='/nav.js?v=16'></script>"
 echo "<div class='chat'>"
 echo "<div class='nickbar' id='nickbar' style='display:none'><span id='nickdisplay'></span><button onclick='changeNick()'>$t_change_nick</button></div>"
 echo "<div class='msgs' id='msgs'>"
@@ -184,10 +180,3 @@ echo "function refreshMsgs(){fetch('/cgi-bin/chat.cgi?ajax=1&lang=$lang').then(f
 echo "window.onload=function(){if(chatNick){applyNick(chatNick);}else{document.getElementById('overlay').style.display='flex';document.getElementById('nickinput').focus();}refreshMsgs();setInterval(refreshMsgs,4000);}"
 echo "</script>"
 echo "</body></html>"
-'@
-[IO.File]::WriteAllText("$env:TEMP\v9-chat.cgi", ($chatCgi -replace "`r`n","`n"), (New-Object System.Text.UTF8Encoding($false)))
-$adb = "C:\Users\jptrs\AppData\Local\Microsoft\WinGet\Packages\Google.PlatformTools_Microsoft.Winget.Source_8wekyb3d8bbwe\platform-tools\adb.exe"
-& $adb -s V9_Telia push "$env:TEMP\v9-chat.cgi" "/data/local/tmp/linux/www/cgi-bin/chat.cgi" 2>&1
-& $adb -s V9_Telia shell 'chmod 755 /data/local/tmp/linux/www/cgi-bin/chat.cgi' 2>&1
-Copy-Item "$env:TEMP\v9-chat.cgi" "C:\Users\jptrs\zte-v9-linux-handover\device\fs\www\cgi-bin\chat.cgi" -Force
-Write-Host "deployed"

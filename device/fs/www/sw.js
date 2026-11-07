@@ -1,4 +1,4 @@
-const CACHE = 'pandp-v1';
+const CACHE = 'pandp-v16';
 const ASSETS = [
   '/',
   '/index.html',
