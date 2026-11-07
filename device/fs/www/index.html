@@ -24,27 +24,27 @@ a:hover{text-decoration:underline}
 </head><body>
 <div class="header"><h1>PandP Home server</h1><a href="#" class="lang-toggle" id="langToggle" onclick="toggleLang();return false;">EN</a></div>
 <div class="container">
-<div class="card" data-i18n-card="filebrowser">
+<div class="card">
 <h2 data-i18n="filebrowser_title">Filbrowser</h2>
-<p data-i18n="filebrowser_desc">Gennemse, upload og administrer filer på enheden.</p>
-<a class="btn" href="/cgi-bin/browse.cgi" data-i18n="filebrowser_btn">Åbn Filbrowser</a>
+<p data-i18n="filebrowser_desc">Gennemse, upload og administrer filer paa enheden.</p>
+<a class="btn" href="/cgi-bin/browse.cgi" data-i18n="filebrowser_btn">Aabn Filbrowser</a>
 </div>
-<div class="card" data-i18n-card="chat">
+<div class="card">
 <h2 data-i18n="chat_title">Chatrum</h2>
-<p data-i18n="chat_desc">Enkel tekstchat gemt på enheden. Beskeder bevares ved genindlæsning.</p>
-<a class="btn" href="/cgi-bin/chat.cgi">Åbn Chat</a>
+<p data-i18n="chat_desc">Enkel tekstchat gemt paa enheden. Beskeder bevares ved genindlaesning.</p>
+<a class="btn" href="/cgi-bin/chat.cgi">Aabn Chat</a>
 </div>
-<div class="card" data-i18n-card="calendar">
+<div class="card">
 <h2 data-i18n="calendar_title">Kalender</h2>
-<p data-i18n="calendar_desc">Månedlig kalender med begivenheder gemt på enheden.</p>
-<a class="btn" href="/cgi-bin/calendar.cgi">Åbn Kalender</a>
+<p data-i18n="calendar_desc">Maanedlig kalender med begivenheder gemt paa enheden.</p>
+<a class="btn" href="/cgi-bin/calendar.cgi">Aabn Kalender</a>
 </div>
-<div class="card" data-i18n-card="grocery">
-<h2 data-i18n="grocery_title">Indkøbsliste</h2>
-<p data-i18n="grocery_desc">Indkøbsliste til dagligvarer. Afkryds mens du køber.</p>
-<a class="btn" href="/cgi-bin/grocery.cgi">Åbn Indkøbsliste</a>
+<div class="card">
+<h2 data-i18n="grocery_title">Indkoebsliste</h2>
+<p data-i18n="grocery_desc">Indkoebsliste til dagligvarer. Afkryds mens du koebber.</p>
+<a class="btn" href="/cgi-bin/grocery.cgi">Aabn Indkoebsliste</a>
 </div>
-<div class="card" data-i18n-card="device">
+<div class="card">
 <h2 data-i18n="device_title">Enhedsinfo</h2>
 <p class="info" data-i18n="device_desc">CPU: ARMv6 600MHz | RAM: 424MB | OS: Android 2.1 | Kernel: 2.6.29 | IP: 192.168.0.71</p>
 </div>
@@ -53,17 +53,17 @@ a:hover{text-decoration:underline}
 var I18N = {
   da: {
     filebrowser_title: "Filbrowser",
-    filebrowser_desc: "Gennemse, upload og administrer filer på enheden.",
-    filebrowser_btn: "Åbn Filbrowser",
+    filebrowser_desc: "Gennemse, upload og administrer filer paa enheden.",
+    filebrowser_btn: "Aabn Filbrowser",
     chat_title: "Chatrum",
-    chat_desc: "Enkel tekstchat gemt på enheden. Beskeder bevares ved genindlæsning.",
-    chat_btn: "Åbn Chat",
+    chat_desc: "Enkel tekstchat gemt paa enheden. Beskeder bevares ved genindlaesning.",
+    chat_btn: "Aabn Chat",
     calendar_title: "Kalender",
-    calendar_desc: "Månedlig kalender med begivenheder gemt på enheden.",
-    calendar_btn: "Åbn Kalender",
-    grocery_title: "Indkøbsliste",
-    grocery_desc: "Indkøbsliste til dagligvarer. Afkryds mens du køber.",
-    grocery_btn: "Åbn Indkøbsliste",
+    calendar_desc: "Maanedlig kalender med begivenheder gemt paa enheden.",
+    calendar_btn: "Aabn Kalender",
+    grocery_title: "Indkoebsliste",
+    grocery_desc: "Indkoebsliste til dagligvarer. Afkryds mens du koebber.",
+    grocery_btn: "Aabn Indkoebsliste",
     device_title: "Enhedsinfo"
   },
   en: {
@@ -98,9 +98,3 @@ function toggleLang(){setLang(getLang()==='da'?'en':'da');}
 window.onload = function(){ applyLang(getLang()); };
 </script>
 </body></html>
-'@
-[IO.File]::WriteAllText("$env:TEMP\v9-index.html", ($index -replace "`r`n","`n"), (New-Object System.Text.UTF8Encoding($false)))
-$adb = "C:\Users\jptrs\AppData\Local\Microsoft\WinGet\Packages\Google.PlatformTools_Microsoft.Winget.Source_8wekyb3d8bbwe\platform-tools\adb.exe"
-& $adb -s V9_Telia push "$env:TEMP\v9-index.html" "/data/local/tmp/linux/www/index.html" 2>&1
-Copy-Item "$env:TEMP\v9-index.html" "C:\Users\jptrs\zte-v9-linux-handover\device\fs\www\index.html" -Force
-Write-Host "done"
