@@ -9,7 +9,9 @@ import android.os.IBinder;
 import android.os.Process;
 import android.util.Log;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileReader;
 import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -39,7 +41,18 @@ public class BootService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        Log.i(TAG, "start requested");
+        String action = (intent != null) ? intent.getAction() : null;
+        Log.i(TAG, "start requested: " + action);
+
+        if ("com.zte.v9boot.WIFI_WIPE".equals(action)) {
+            try { wipeWifi(); } catch (Throwable t) { Log.e(TAG, "wifi wipe failed: " + t); }
+            return START_NOT_STICKY;
+        }
+        if ("com.zte.v9boot.WIFI_SETUP".equals(action) || "com.zte.v9boot.WIFI_ADD".equals(action)) {
+            try { setupWifi(intent); } catch (Throwable t) { Log.e(TAG, "wifi setup failed: " + t); }
+            return START_NOT_STICKY;
+        }
+
         try {
             keepWifiAwake();
         } catch (Throwable t) {
@@ -223,6 +236,102 @@ public class BootService extends Service {
             }
         }
         Log.w(TAG, "timed out waiting for " + cmd[0]);
+    }
+
+    // --------------------------------------------------------------- wifi mgmt
+
+    /** Remove every saved network and turn the radio off. */
+    private void wipeWifi() {
+        WifiManager wm = wifiManager();
+        if (wm == null) { Log.w(TAG, "no WifiManager"); return; }
+        List<WifiConfiguration> nets = wm.getConfiguredNetworks();
+        int n = 0;
+        if (nets != null) {
+            for (WifiConfiguration c : nets) {
+                if (wm.removeNetwork(c.networkId)) n++;
+            }
+        }
+        wm.saveConfiguration();
+        wm.setWifiEnabled(false);
+        Log.i(TAG, "wiped " + n + " saved network(s); wifi disabled");
+        writeStatus("wiped " + n + " network(s); wifi disabled");
+    }
+
+    /** Read SSID/PSK from intent extras or /data/local/tmp/wifi.txt and add it. */
+    private void setupWifi(Intent intent) {
+        String ssid = null, psk = null;
+        boolean open = false;
+        if (intent != null && intent.hasExtra("ssid")) {
+            ssid = intent.getStringExtra("ssid");
+            psk = intent.getStringExtra("psk");
+            open = intent.getBooleanExtra("open", false);
+        }
+        if (ssid == null) {
+            // Fall back to a world-readable file so passwords never hit the
+            // command line. /sdcard is FAT (no exec) but readable/writable by
+            // everyone, including this app; /data/local/tmp is shell-owned only.
+            String[] candidates = { "/sdcard/wifi.txt", "/data/local/tmp/wifi.txt" };
+            for (String path : candidates) {
+                try {
+                    BufferedReader r = new BufferedReader(new FileReader(path));
+                    String line;
+                    while ((line = r.readLine()) != null) {
+                        line = line.trim();
+                        if (line.startsWith("SSID=")) ssid = line.substring(5);
+                        else if (line.startsWith("PSK=")) psk = line.substring(4);
+                        else if (line.equals("OPEN=1")) open = true;
+                    }
+                    r.close();
+                    if (ssid != null) break;
+                } catch (Exception e) {
+                    // try next candidate
+                }
+            }
+            if (ssid == null) {
+                Log.w(TAG, "could not read wifi.txt from any candidate path");
+            }
+        }
+        if (ssid == null || ssid.length() == 0) {
+            Log.e(TAG, "no SSID given (intent extra 'ssid' or /data/local/tmp/wifi.txt)");
+            writeStatus("ERROR: no SSID given");
+            return;
+        }
+
+        WifiManager wm = wifiManager();
+        if (wm == null) { Log.w(TAG, "no WifiManager"); return; }
+        if (!wm.isWifiEnabled()) wm.setWifiEnabled(true);
+
+        // Start from a clean slate so a forgotten password no longer matters.
+        List<WifiConfiguration> old = wm.getConfiguredNetworks();
+        if (old != null) for (WifiConfiguration c : old) wm.removeNetwork(c.networkId);
+        wm.saveConfiguration();
+
+        WifiConfiguration c = new WifiConfiguration();
+        c.SSID = q2(ssid);
+        if (open) {
+            c.allowedKeyManagement.set(WifiConfiguration.KeyMgmt.NONE);
+        } else {
+            c.preSharedKey = q2(psk == null ? "" : psk);
+            c.allowedKeyManagement.set(WifiConfiguration.KeyMgmt.WPA_PSK);
+        }
+        int id = wm.addNetwork(c);
+        Log.i(TAG, "addNetwork(" + ssid + ") -> " + id);
+        if (id < 0) { Log.e(TAG, "addNetwork failed"); writeStatus("ERROR: addNetwork failed for " + ssid); return; }
+        wm.enableNetwork(id, true);
+        wm.reconnect();
+        writeStatus("configured " + ssid + " (networkId=" + id + "); reconnecting");
+    }
+
+    private void writeStatus(String msg) {
+        try {
+            java.io.FileWriter w = new java.io.FileWriter(new File(home(), "wifi-status.txt"));
+            w.write(msg + "\\n");
+            w.close();
+        } catch (Exception e) { Log.w(TAG, "status write failed: " + e); }
+    }
+
+    private static String q2(String s) {
+        return "\"" + s + "\"";
     }
 
     private static String q(String s) {

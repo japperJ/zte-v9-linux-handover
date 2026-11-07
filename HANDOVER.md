@@ -183,9 +183,13 @@ Limits worth knowing:
   key and `authorized_keys`; the boot service recreates both on the next start.
 - **The APK signs with a local keystore** (`device/autostart/v9boot.keystore`,
   git-ignored). Keep it, or updates must be uninstall/reinstall.
-- **Wi-Fi still needs a saved network in range.** The app can only reconnect to
-  networks the device already knows; there is no way to type a passphrase with
-  a broken screen, and no root to write `wpa_supplicant.conf`.
+- **Wi-Fi without the Settings password.** The app manages Wi-Fi directly, so a
+  forgotten restriction password no longer blocks changes:
+  - Wipe everything: `am broadcast -a com.zte.v9boot.WIFI_WIPE -n com.zte.v9boot/.BootReceiver`
+  - Add a network: write `/sdcard/wifi.txt` with `SSID=...` and `PSK=...`
+    (or `OPEN=1`), then `am broadcast -a com.zte.v9boot.WIFI_SETUP -n com.zte.v9boot/.BootReceiver`.
+  - Result goes to `~/wifi-status.txt` (readable over SSH). The password never
+    passes through the Settings UI.
 
 ---
 

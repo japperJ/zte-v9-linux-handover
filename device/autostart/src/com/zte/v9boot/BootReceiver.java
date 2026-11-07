@@ -13,6 +13,15 @@ public class BootReceiver extends BroadcastReceiver {
     @Override
     public void onReceive(Context context, Intent intent) {
         Log.i(BootService.TAG, "received " + intent.getAction());
-        context.startService(new Intent(context, BootService.class));
+        // Forward the original intent (action + extras) to the service instead of
+        // dropping it, so WIFI_WIPE / WIFI_SETUP commands reach onStartCommand.
+        Intent svc = new Intent(context, BootService.class);
+        if (intent.getAction() != null) {
+            svc.setAction(intent.getAction());
+        }
+        if (intent.getExtras() != null) {
+            svc.putExtras(intent.getExtras());
+        }
+        context.startService(svc);
     }
 }
