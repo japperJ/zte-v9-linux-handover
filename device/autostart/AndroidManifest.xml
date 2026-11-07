@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Tiny boot service for the ZTE V9 (Android 2.1, SDK 7).
+
+  It exists for one reason: the userspace in /data/local/tmp cannot be added to
+  init.rc without root, but an ordinary APK can receive BOOT_COMPLETED. That is
+  enough to start dropbear as the app's own uid, which dropbear accepts as a
+  login account (ztpw.c answers getpwnam/getpwuid from the environment).
+
+  No root, no system partition changes.
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.zte.v9boot">
+
+    <uses-sdk android:minSdkVersion="7" android:targetSdkVersion="7" />
+
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+    <uses-permission android:name="android.permission.CHANGE_WIFI_STATE" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+
+    <application android:label="V9 Linux boot" android:debuggable="true">
+        <receiver android:name=".BootReceiver">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
+        <service android:name=".BootService" />
+    </application>
+</manifest>

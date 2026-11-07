@@ -39,11 +39,19 @@ time; most of them contradicted the assumptions in the original handover.
   `PATH` matters so much.
 - `input` is keyevent-only; there is no touch injection through it.
 - `adb shell` allocates a pty. Commands that daemonize make it hang waiting for
-  EOF; fire those detached and ignore the stuck client.
+  EOF; fire those detached and ignore the stuck client. Several 2.1 commands
+  (`am`, `pm`, `pm list packages | head`) also print their result and then leave
+  the pty open. Run those with a host-side timeout and read the output that
+  arrived; do not treat the hang as failure (`pm path` is a good follow-up
+  check).
 - **PowerShell quoting:** wrap device-side strings in **single quotes** when
   they contain `$`, and pass the whole remote command as one argument.
   PowerShell variable names are case-insensitive — `$T` and `$t` are the same
-  variable, which silently mangles paths.
+  variable, which silently mangles paths. Also never name a function parameter
+  `$Args`: it collides with the automatic `$args`, and the bound value is lost.
+- **The device clock is wrong** (it reports Oct 2015). Timestamps in `ls`,
+  `ps` and dropbear logs are misleading; there is no NTP without a working
+  network.
 
 ---
 
@@ -150,3 +158,42 @@ Debian rootfs is not.
 The framebuffer device is readable from uid 2000, so screen captures are
 possible, but the panel is physically damaged — the content is not usable for
 navigation. `fb-*.png` captures from earlier sessions were taken this way.
+
+---
+
+## 10. Boot APK on Android 2.1 (SDK 7)
+
+- **`am` has no `startservice`.** Only `start`, `broadcast`, `instrument` and
+  `profile` exist. The boot service is triggered with an explicit broadcast:
+  `am broadcast -a com.zte.v9boot.START -n com.zte.v9boot/.BootReceiver`.
+- An **explicit** broadcast bypasses intent-filter matching, so the receiver
+  does not need a `<intent-filter>` for that action; it only declares
+  `BOOT_COMPLETED`.
+- **`BOOT_COMPLETED` is delivered to a freshly installed app** on 2.1 (the
+  "stopped state" restriction only arrived in 3.1), so no manual launch is
+  needed after `adb install`.
+- **Apps get uid 10000+** (10049 here) and only get the `inet` group with the
+  `INTERNET` permission. Binding 2222 is allowed because it is above 1024.
+- **The app cannot use the shell account's home.** `/data/local/tmp/linux/root`
+  is `0700 shell`, and dropbear's `checkpubkeyperms()` requires the login
+  account's home to be owned by the login uid (or root). So the app creates its
+  own home under `/data/data/com.zte.v9boot/files/home`, sets `ZT_HOME`,
+  `ZT_SHELL`, `ZT_UID` and lets `ztpw.c` present that as the account. The
+  shell-owned `authorized_keys` is unreadable to the app — this is why the APK
+  ships its own copy as an asset.
+- **The daemon outlives the app process.** `Runtime.exec` leaves a separate pid;
+  killing the app does not kill dropbear. Conversely uid 2000 cannot kill the
+  app-uid daemon (`killall dropbear` is denied); use `adb uninstall` or reboot.
+- **Two daemons cannot coexist** on 2222. Detect an existing listener through
+  `/proc/net/tcp` (port `08AE`, state `0A`) instead of pid files.
+- **Modern build tools still target SDK 7:** `aapt2 link --min-sdk-version 7
+  --target-sdk-version 7`, `d8 --min-api 7`, and `apksigner` with v1 only
+  (`--v2-signing-enabled false --v3-signing-enabled false`). The result is
+  ~8 kB and `pm` installs it on 2.1.
+- **`d8.bat`/`apksigner.bat` need `JAVA_HOME`**, even when `javac` was found
+  elsewhere; point it at Android Studio's bundled JBR.
+- **Wi-Fi rediscovery:** `WifiManager.getConfiguredNetworks()` works from an
+  app and reveals saved networks, which `dumpsys wifi` does not print on this
+  build. The radio was enabled and scanning the whole time; the only saved
+  network was out of range, so no IP was obtained. `svc wifi` does not exist on
+  2.1 (the command kills itself).

@@ -121,22 +121,35 @@ if ($NoStart) {
 }
 
 Write-Host '== starting dropbear'
-Invoke-Adb shell "$L/bin/busybox killall dropbear 2>/dev/null; true" | Out-Null
-Start-Sleep -Milliseconds 500
-
-# adb shell allocates a pty and never reports EOF once dropbear daemonizes, so
-# fire it off detached and let the daemon detach itself from the pty.
-$log = Join-Path $env:TEMP 'v9-dropbear-start.log'
-Start-Process -FilePath $Adb `
-    -ArgumentList @('-s', $Serial, 'shell', "$L/bin/sh $L/start-ssh.sh; $L/bin/busybox sleep 600") `
-    -WindowStyle Hidden -RedirectStandardOutput $log -RedirectStandardError "$log.err"
-Start-Sleep -Seconds 3
-
-$dbPid = (Invoke-Adb shell "cat $L/dropbear.pid 2>/dev/null") -join ''
-if ($dbPid.Trim() -match '^\d+$') {
-    Write-Host "   dropbear running, pid $($dbPid.Trim())"
+# The boot APK (device/autostart) runs its own daemon as the app uid on
+# 0.0.0.0:2222. uid 2000 cannot kill it, and a second daemon cannot bind the
+# port, so detect an existing listener first and leave it alone.
+$tcp = (Invoke-Adb shell 'cat /proc/net/tcp') -join "`n"
+$busy = $false
+foreach ($line in ($tcp -split "`n")) {
+    $f = ($line.Trim() -split '\s+')
+    if ($f.Count -ge 10 -and $f[1] -match ':08AE$' -and $f[3] -eq '0A') { $busy = $true; break }
+}
+if ($busy) {
+    Write-Host '   port 2222 already has a listener (boot APK or an earlier daemon); not starting another'
 } else {
-    Write-Warning "dropbear did not start; see $log"
+    Invoke-Adb shell "$L/bin/busybox killall dropbear 2>/dev/null; true" | Out-Null
+    Start-Sleep -Milliseconds 500
+
+    # adb shell allocates a pty and never reports EOF once dropbear daemonizes, so
+    # fire it off detached and let the daemon detach itself from the pty.
+    $log = Join-Path $env:TEMP 'v9-dropbear-start.log'
+    Start-Process -FilePath $Adb `
+        -ArgumentList @('-s', $Serial, 'shell', "$L/bin/sh $L/start-ssh.sh; $L/bin/busybox sleep 600") `
+        -WindowStyle Hidden -RedirectStandardOutput $log -RedirectStandardError "$log.err"
+    Start-Sleep -Seconds 3
+
+    $dbPid = (Invoke-Adb shell "cat $L/dropbear.pid 2>/dev/null") -join ''
+    if ($dbPid.Trim() -match '^\d+$') {
+        Write-Host "   dropbear running, pid $($dbPid.Trim())"
+    } else {
+        Write-Warning "dropbear did not start; see $log"
+    }
 }
 
 Invoke-Adb forward tcp:2222 tcp:2222 | Out-Null
