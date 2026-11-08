@@ -27,6 +27,7 @@ Android 2.1; Linux is a userspace on top of it.
 | dropbear 2022.83 source | `https://matt.ucc.asn.au/dropbear/releases/dropbear-2022.83.tar.bz2`, extracted next to this README as `dropbear-2022.83/`. |
 | BusyBox armv5l | `https://busybox.net/downloads/binaries/1.31.0-defconfig-multiarch-musl/busybox-armv5l` → save as `vendor/busybox-armv5l` (SHA256 `69BBB65CCD70481EC2DF19B8770B2E979AEB75DDDF08D2FC5B0230F892989C40`). |
 | Client key | `ssh-keygen -t ed25519 -f ~/.ssh/zte_v9` on the host, public half concatenated into `authorized_keys`. |
+| Android SDK + JDK | Only for the boot APK. Android Studio's bundled JBR works; no Gradle needed. |
 
 ## Build
 
@@ -64,6 +65,59 @@ adb forward tcp:2323 tcp:2323
 # then: telnet 127.0.0.1 2323
 ```
 
+## Web file server + chat
+
+Once the device is on your network, open `http://<device-ip>:8080/` in any
+browser:
+
+- **File browser** (`/cgi-bin/browse.cgi`) — list and download files
+- **Upload** — pick a file and upload via the browser (stored in the web root)
+- **Chat room** (`/cgi-bin/chat.cgi`) — simple text chat, messages stored on
+- **Task list** (/cgi-bin/tasks.cgi) - simple to-do list, tasks stored on the device, tap to toggle done
+- **Calendar** (/cgi-bin/calendar.cgi) - monthly calendar with events stored on the device, tap a day to add
+- **Grocery list** (/cgi-bin/grocery.cgi) - shopping list with quantities, check off purchased, clear purchased
+- **PWA**: the site ships a web app manifest and icons, so browsers can 'Add to Home Screen' / install it as an app (HTTPS required for the service worker/offline cache).
+  the device, auto-refreshes every 5 seconds
+
+The server runs on port 8080 (non-privileged) and starts automatically with
+the boot APK and `start-ssh.sh`. Files are stored in
+`/data/local/tmp/linux/www/`. Use `adb push` or SSH to add files in bulk.
+
+The device comes back as `19d2:0083` (no ADB), but `/data` is untouched. One
+command handles the whole recovery:
+
+```powershell
+.\connect.ps1
+```
+
+It locates the real adb, re-runs the ZTE driver installer elevated when needed,
+waits for the device, starts dropbear if nothing is listening on 2222, sets up
+the forwards and verifies the SSH login. Use `-NoDriver` if the device is
+already in ADB mode and you do not want the UAC prompt, `-Timeout` to wait
+longer, `-NoVerify` to skip the smoke test.
+
+## Boot APK (self-starting, no root)
+
+`autostart/` is a small APK (`com.zte.v9boot`) that receives `BOOT_COMPLETED`
+and starts dropbear as its own app uid on `0.0.0.0:2222`. It is the only
+non-root way to run anything after a reboot on a stock 2.1 build.
+
+```powershell
+.\autostart\build-autostart.ps1    # aapt2 + d8 + apksigner, no Gradle
+.\install-autostart.ps1            # adb install, then trigger the service
+```
+
+Requires the Android SDK (build-tools + a platform) and a JDK; the build script
+finds Android Studio's bundled JBR automatically. The signing key
+(`autostart/v9boot.keystore`) is created on first build and is git-ignored —
+keep it if you want to update the app in place.
+
+Because the app uid cannot read the shell-owned home, the APK keeps its own home
+under `/data/data/com.zte.v9boot/files/home` with its own `authorized_keys`
+(copied from the host keys at build time) and host key. That daemon logs to
+`files/home/dropbear.log` and cannot be killed from `adb shell`; use
+`adb uninstall com.zte.v9boot` or reboot.
+
 ## Patches
 
 | Patch | Why |
@@ -92,3 +146,8 @@ of which can exist without root. The synthetic account comes from `ZT_HOME`,
 - **The client key must have no passphrase.** A key created with a passphrase
   (even an empty-looking one) makes the client accept `PK_OK` and then fail to
   sign, which looks exactly like a server-side rejection.
+- **Only one daemon can own port 2222.** If the boot APK's daemon is running,
+  `deploy.ps1` will not start a second one and uid 2000 cannot kill the app's
+  daemon; reboot or `adb uninstall com.zte.v9boot` to get rid of it.
+- **`am` on 2.1 has no `startservice`**, and `adb install`/`pm` can leave the
+  pty open after printing. Scripts that need them must use a host-side timeout.

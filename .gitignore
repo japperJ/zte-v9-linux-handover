@@ -1,0 +1,11 @@
+# Build output
+device/autostart/build/
+device/autostart/bin/
+device/autostart/assets/authorized_keys
+
+# Local signing key: losing it only means "uninstall, then reinstall"
+device/autostart/v9boot.keystore
+
+# Downloaded third-party binaries (see device/README.md)
+device/vendor/
+dropbear-2022.83/

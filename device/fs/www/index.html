@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="da"><head><title>PandP Home server</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#16213e">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="/manifest.json">
+<link rel="stylesheet" href="/nav.css?v=16">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<style>
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;margin:0;background:#1a1a2e;color:#eee;min-height:100vh;font-size:16px;line-height:1.4}
+.header{background:#16213e;padding:16px;text-align:center;position:relative}
+.header h1{color:#4fc3f7;margin:0;font-size:1.6em}
+.lang-toggle{position:absolute;top:10px;right:10px;background:#21262d;color:#4fc3f7;border:1px solid #30363d;padding:8px 14px;border-radius:6px;cursor:pointer;font-size:15px;text-decoration:none;min-height:40px;display:inline-flex;align-items:center}
+.lang-toggle:hover{background:#30363d}
+.container{max-width:100%;margin:0 auto;padding:0 12px}
+
+
+.panel{background:#16213e;border:1px solid #222a3d;border-radius:10px;padding:14px;margin:12px auto 0;max-width:100%}
+.ph{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px}
+.ph h2{margin:0;font-size:18px;color:#e6edf3;font-weight:700}
+.ph .s{font-size:13px;color:#8b949e}
+.mnav{display:flex;align-items:center;gap:6px}
+.mnav .s{font-size:15px}
+.mnav button{background:#21262d;color:#4fc3f7;border:1px solid #30363d;border-radius:8px;width:40px;height:40px;font-size:18px;line-height:1;cursor:pointer;padding:0}
+.mnav button:active{background:#30363d}
+
+.cal{display:grid;grid-template-columns:repeat(7,1fr);text-align:center;font-size:16px;gap:4px 0}
+.cal .wd{color:#8b949e;font-weight:700;padding:6px 0;font-size:12px}
+.d{position:relative;display:flex;align-items:center;justify-content:center;height:42px;color:#c9d1d9;width:100%;background:none;border:0;padding:0;font:inherit;cursor:pointer;-webkit-appearance:none;border-radius:8px}
+.d b{font-weight:400;width:32px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:50%}
+.d.mut{color:#4b5563}
+.d.today b{background:#4fc3f7;color:#0d1117;font-weight:800}
+.d.sel b{box-shadow:inset 0 0 0 2px #4fc3f7;color:#4fc3f7}
+.d.today.sel b{box-shadow:inset 0 0 0 2px #0d1117;color:#0d1117}
+.d i{position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:4px;height:4px;border-radius:50%;background:#4fc3f7}
+.d.allday i{background:#d4a017}
+.d.today i{bottom:3px}
+
+.todayline{display:flex;gap:10px;align-items:center;background:#0d1117;border:1px solid #21262d;border-radius:8px;padding:11px 13px;margin-top:12px;font-size:16px;color:#c9d1d9;min-height:46px}
+.todayline .muted{color:#8b949e;font-style:italic}
+.todayline .extra{color:#8b949e;font-size:0.85em}
+.time{background:#4fc3f7;color:#0d1117;font-weight:800;border-radius:4px;padding:2px 7px;font-size:12px;white-space:nowrap}
+
+.dateh{color:#4fc3f7;font-size:13px;font-weight:700;padding:14px 0 4px}
+.todo{display:flex;align-items:center;gap:10px;padding:11px 0;border-top:1px solid #21262d;color:#e6edf3;text-decoration:none;font-size:16px;min-height:48px}
+.todo:active{background:#1a2740}
+.todo .tx{flex:1;min-width:0;word-wrap:break-word}
+.more{display:block;text-align:right;font-size:13px;color:#4fc3f7;padding-top:12px;text-decoration:none}
+.empty{color:#8b949e;text-align:center;padding:20px 10px;font-style:italic;font-size:14px}
+
+.dev{display:flex;justify-content:center;gap:16px;flex-wrap:wrap;font-size:12px;color:#6b7280;padding:20px 10px 28px}
+
+@media (min-width:600px){
+  body{font-size:17px}
+  .container{padding:0 18px}
+  .panel{max-width:720px;padding:16px;border-radius:10px}
+  .ph h2{font-size:19px}
+  .ph .s{font-size:14px}
+  .mnav button{width:44px;height:44px;font-size:19px}
+  .mnav .s{font-size:16px}
+  .cal{font-size:16px}
+  .cal .wd{font-size:13px;padding:7px 0}
+  .d{height:46px}
+  .d b{width:36px;height:36px}
+  .todayline{font-size:16px;min-height:50px;padding:11px 13px}
+  .time{font-size:13px}
+  .dateh{font-size:14px}
+  .todo{font-size:16px;min-height:50px}
+  .more{font-size:14px}
+  .empty{font-size:15px}
+  .dev{font-size:12px}
+}
+
+@media (min-width:1024px){
+  body{font-size:18px}
+  .header{padding:20px}
+  .header h1{font-size:1.8em}
+  .lang-toggle{font-size:15px;padding:9px 16px;min-height:44px}
+  .container{max-width:1040px;padding:0 24px}
+  .panel{max-width:880px;padding:20px}
+  .ph h2{font-size:22px}
+  .ph .s{font-size:15px}
+  .mnav button{width:48px;height:48px;font-size:20px}
+  .mnav .s{font-size:18px}
+  .cal{font-size:17px}
+  .cal .wd{font-size:14px;padding:8px 0}
+  .d{height:50px}
+  .d b{width:38px;height:38px}
+  .todayline{font-size:17px;min-height:54px;padding:12px 14px}
+  .time{font-size:14px;padding:2px 8px}
+  .dateh{font-size:15px;padding:16px 0 5px}
+  .todo{font-size:17px;min-height:54px;padding:13px 0}
+  .more{font-size:15px;padding-top:14px}
+  .empty{font-size:16px}
+  .dev{font-size:12px;padding:24px 10px 32px}
+}
+
+@media (min-width:1400px){
+  .container{max-width:1200px}
+  .panel{max-width:1000px}
+  .ph h2{font-size:24px}
+  .ph .s{font-size:16px}
+  .cal{font-size:18px}
+  .cal .wd{font-size:15px}
+  .todayline{font-size:18px}
+  .todo{font-size:18px}
+  .dateh{font-size:16px}
+  .more{font-size:16px}
+}
+</style>
+<script>if('serviceWorker' in navigator){navigator.serviceWorker.register('/sw.js').catch(function(){});}</script>
+</head><body>
+<div class="header"><h1>PandP Home</h1><a href="#" class="lang-toggle" id="langToggle" onclick="toggleLang();return false;">EN</a></div>
+<div class="container">
+  <script src="/nav.js?v=16"></script>
+
+  <div class="panel">
+    <div class="ph">
+      <h2 data-i18n="cal_title">Kalender</h2>
+      <div class="mnav"><button type="button" onclick="prevMonth()" aria-label="Forrige måned">&#9664;</button><span class="s" id="calTitle"></span><button type="button" onclick="nextMonth()" aria-label="Næste måned">&#9654;</button></div>
+    </div>
+    <div class="cal" id="calGrid"></div>
+    <div class="todayline" id="todayLine"></div>
+  </div>
+
+  <div class="panel">
+    <div class="ph"><h2 data-i18n="todo_title">Opgaver</h2><span class="s" data-i18n="todo_sub">fra kalenderen</span></div>
+    <div id="todoList"></div>
+    <a class="more" href="/cgi-bin/calendar.cgi" data-i18n="todo_more">Se hele kalenderen &rsaquo;</a>
+  </div>
+
+  <div class="dev"><span>CPU: ARMv6 600MHz</span><span>RAM: 424MB</span><span>Android 2.1</span><span>IP: 192.168.0.71</span></div>
+</div>
+<script>
+var I18N = {
+  da: {
+    app_hjem: "Hjem", app_filer: "Filer", app_chat: "Chat", app_kalender: "Kalender", app_indkoeb: "Indkøb", app_opskrifter: "Opskrifter", app_opgaveliste: "Gøremål",
+    cal_title: "Kalender", todo_title: "Opgaver", todo_sub: "fra kalenderen", todo_more: "Se hele kalenderen ›",
+    no_today: "Ingen aftaler i dag", no_day: "Ingen aftaler", no_upcoming: "Ingen kommende aftaler de næste 30 dage.", all_day: "Hele dagen", loading: "Indlæser…"
+  },
+  en: {
+    app_hjem: "Home", app_filer: "Files", app_chat: "Chat", app_kalender: "Calendar", app_indkoeb: "Grocery", app_opskrifter: "Recipes", app_opgaveliste: "To-dos",
+    cal_title: "Calendar", todo_title: "Tasks", todo_sub: "from calendar", todo_more: "Open calendar ›",
+    no_today: "No events today", no_day: "No events", no_upcoming: "No upcoming events in the next 30 days.", all_day: "All day", loading: "Loading…"
+  }
+};
+var DAYS_DA = ["søndag","mandag","tirsdag","onsdag","torsdag","fredag","lørdag"];
+var DAYS_EN = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+var MONTHS_DA = ["januar","februar","marts","april","maj","juni","juli","august","september","oktober","november","december"];
+var MONTHS_EN = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+var WD_DA = ["Ma","Ti","On","To","Fr","Lø","Sø"];
+var WD_EN = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+
+var events = [];
+var calCur = new Date();
+var selDate = null;
+var loaded = false;
+
+function getLang(){ return localStorage.getItem('lang') || 'da'; }
+function setLang(l){ localStorage.setItem('lang', l); applyLang(l); }
+function t(k){ var l = getLang(); var d = I18N[l] || I18N.da; return d[k] || I18N.da[k] || k; }
+function toggleLang(){ var nl = (getLang() === 'da') ? 'en' : 'da'; try{ document.cookie = 'lang=' + nl + ';path=/;max-age=31536000'; }catch(e){} setLang(nl); }
+function applyLang(l){
+  document.documentElement.lang = l;
+  var btn = document.getElementById('langToggle');
+  if(btn) btn.textContent = (l === 'da') ? 'EN' : 'DA';
+  var nodes = document.querySelectorAll('[data-i18n]');
+  for(var i = 0; i < nodes.length; i++){
+    var key = nodes[i].getAttribute('data-i18n');
+    var dict = I18N[l] || I18N.da;
+    if(dict[key]) nodes[i].textContent = dict[key];
+  }
+  renderAll();
+}
+
+function pad(n){ return n < 10 ? '0' + n : '' + n; }
+function ymd(d){ return d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate()); }
+function todayStr(){ return ymd(new Date()); }
+function escHtml(s){
+  var d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+function cap(s){ return s.charAt(0).toUpperCase() + s.substring(1); }
+function monthName(m){ return (getLang() === 'da') ? MONTHS_DA[m] : MONTHS_EN[m]; }
+function dayName(m){ return (getLang() === 'da') ? DAYS_DA[m] : DAYS_EN[m]; }
+function dateLabel(ds){
+  var p = ds.split('-');
+  var d = new Date(parseInt(p[0],10), parseInt(p[1],10)-1, parseInt(p[2],10));
+  if(getLang() === 'da') return dayName(d.getDay()) + ' ' + d.getDate() + '. ' + MONTHS_DA[d.getMonth()];
+  return dayName(d.getDay()) + ' ' + d.getDate() + ' ' + MONTHS_EN[d.getMonth()];
+}
+function timeLabel(ev){
+  if(ev.fullday === '1') return t('all_day');
+  if(ev.start && ev.end) return ev.start + '-' + ev.end;
+  if(ev.start) return ev.start;
+  return '';
+}
+function sortKey(ev){
+  if(ev.fullday === '1' || (!ev.start && !ev.end)) return '00:00';
+  return ev.start || '99:99';
+}
+
+function expandEvent(base){
+  var recur = base.recur || 'none';
+  if(recur === 'none' || !base.date){
+    base.origId = base.id;
+    events.push(base);
+    return;
+  }
+  var until = base.until ? new Date(base.until + 'T00:00:00') : null;
+  var start = new Date(base.date + 'T00:00:00');
+  if(!until){ until = new Date(start); until.setFullYear(until.getFullYear() + 1); }
+  var cur = new Date(start);
+  var count = 0;
+  while(cur <= until && count < 366){
+    events.push({ id: base.id + '_' + ymd(cur), origId: base.id, date: ymd(cur), title: base.title, recur: recur, until: base.until, start: base.start, end: base.end, fullday: base.fullday });
+    if(recur === 'daily') cur.setDate(cur.getDate() + 1);
+    else if(recur === 'weekly') cur.setDate(cur.getDate() + 7);
+    else if(recur === 'monthly') cur.setMonth(cur.getMonth() + 1);
+    else if(recur === 'yearly') cur.setFullYear(cur.getFullYear() + 1);
+    else break;
+    count++;
+  }
+}
+
+function parseEvents(txt){
+  events = [];
+  var lines = txt.split('\n');
+  for(var i = 0; i < lines.length; i++){
+    var l = lines[i];
+    if(!l) continue;
+    var p1 = l.indexOf('|');
+    if(p1 < 0) continue;
+    var p2 = l.indexOf('|', p1+1);
+    var p3 = p2 < 0 ? -1 : l.indexOf('|', p2+1);
+    var p4 = p3 < 0 ? -1 : l.indexOf('|', p3+1);
+    var p5 = p4 < 0 ? -1 : l.indexOf('|', p4+1);
+    var p6 = p5 < 0 ? -1 : l.indexOf('|', p5+1);
+    var p7 = p6 < 0 ? -1 : l.indexOf('|', p6+1);
+    var base = {
+      id: l.substring(0, p1),
+      date: p2 < 0 ? '' : l.substring(p1+1, p2),
+      title: p2 < 0 ? '' : l.substring(p2+1, p3 < 0 ? l.length : p3),
+      recur: p3 < 0 ? 'none' : l.substring(p3+1, p4 < 0 ? l.length : p4),
+      until: p4 < 0 ? '' : l.substring(p4+1, p5 < 0 ? l.length : p5),
+      start: p5 < 0 ? '' : l.substring(p5+1, p6 < 0 ? l.length : p6),
+      end: p6 < 0 ? '' : l.substring(p6+1, p7 < 0 ? l.length : p7),
+      fullday: p7 < 0 ? '0' : l.substring(p7+1)
+    };
+    if(base.date) expandEvent(base);
+  }
+}
+
+function loadCalendar(){
+  fetch('/cgi-bin/calendar.cgi?ajax=1&t=' + Date.now())
+    .then(function(r){ return r.text(); })
+    .then(function(txt){ parseEvents(txt); loaded = true; renderAll(); })
+    .catch(function(){ loaded = true; renderAll(); });
+}
+
+function loadBadge(){
+  fetch('/cgi-bin/grocery.cgi?ajax=1&t=' + Date.now())
+    .then(function(r){ return r.text(); })
+    .then(function(txt){
+      var n = 0;
+      var lines = txt.split('\n');
+      for(var i = 0; i < lines.length; i++){
+        var l = lines[i];
+        if(!l) continue;
+        var p = l.lastIndexOf('|');
+        if(p > 0 && l.substring(p+1) !== '1') n++;
+      }
+      var b = document.getElementById('cartBadge');
+      if(!b) return;
+      if(n > 0){ b.textContent = n; b.style.display = 'inline-block'; }
+      else b.style.display = 'none';
+    })
+    .catch(function(){});
+}
+
+function renderCalendar(){
+  var grid = document.getElementById('calGrid');
+  var title = document.getElementById('calTitle');
+  if(!grid || !title) return;
+  title.textContent = cap(monthName(calCur.getMonth())) + ' ' + calCur.getFullYear();
+
+  var byDay = {};
+  var allDay = {};
+  for(var i = 0; i < events.length; i++){
+    byDay[events[i].date] = 1;
+    if(events[i].fullday === '1') allDay[events[i].date] = 1;
+  }
+
+  var wds = (getLang() === 'da') ? WD_DA : WD_EN;
+  var html = '';
+  for(var w = 0; w < 7; w++) html += '<span class="wd">' + wds[w] + '</span>';
+
+  var y = calCur.getFullYear(), m = calCur.getMonth();
+  var first = new Date(y, m, 1);
+  var lead = (first.getDay() + 6) % 7;
+  var prevDays = new Date(y, m, 0).getDate();
+  var days = new Date(y, m+1, 0).getDate();
+  var today = todayStr();
+
+  for(var a = 0; a < lead; a++){
+    html += '<span class="d mut"><b>' + (prevDays - lead + 1 + a) + '</b></span>';
+  }
+  for(var d = 1; d <= days; d++){
+    var ds = y + '-' + pad(m+1) + '-' + pad(d);
+    var cls = 'd';
+    if(ds === today) cls += ' today';
+    if(ds === (selDate || today)) cls += ' sel';
+    if(byDay[ds]) cls += ' ev';
+    if(allDay[ds]) cls += ' allday';
+    html += '<button type="button" class="' + cls + '" onclick="selectDay(\'' + ds + '\')"><b>' + d + '</b>' + (byDay[ds] ? '<i></i>' : '') + '</button>';
+  }
+  var total = lead + days;
+  var rem = total % 7;
+  if(rem){
+    for(var b = 1; b <= 7 - rem; b++) html += '<span class="d mut"><b>' + b + '</b></span>';
+  }
+  grid.innerHTML = html;
+}
+
+function renderToday(){
+  var el = document.getElementById('todayLine');
+  if(!el) return;
+  if(!loaded){
+    el.innerHTML = '<span class="muted">' + escHtml(t('loading')) + '</span>';
+    return;
+  }
+  var today = todayStr();
+  var ds = selDate || today;
+  var isToday = ds === today;
+  var list = [];
+  for(var i = 0; i < events.length; i++) if(events[i].date === ds) list.push(events[i]);
+  list.sort(function(x, y){ return sortKey(x) < sortKey(y) ? -1 : (sortKey(x) > sortKey(y) ? 1 : 0); });
+  var dayPill = isToday ? '' : '<span class="time">' + escHtml(shortDate(ds)) + '</span>';
+  if(list.length === 0){
+    el.innerHTML = dayPill + '<span class="muted">' + escHtml(isToday ? t('no_today') : t('no_day')) + '</span>';
+    return;
+  }
+  var ev = list[0];
+  var tl = timeLabel(ev);
+  var extra = list.length > 1 ? '<span class="extra">+' + (list.length - 1) + '</span>' : '';
+  el.innerHTML = dayPill + (tl ? '<span class="time">' + escHtml(tl) + '</span>' : '') + '<span>' + escHtml(ev.title) + '</span>' + extra;
+}
+
+function selectDay(ds){
+  selDate = (selDate === ds) ? null : ds;
+  renderCalendar();
+  renderToday();
+}
+
+function shortDate(ds){
+  var p = ds.split('-');
+  var m = parseInt(p[1], 10) - 1;
+  var mon = (getLang() === 'da') ? MONTHS_DA[m] : MONTHS_EN[m];
+  return parseInt(p[2], 10) + (getLang() === 'da' ? '. ' : ' ') + mon.substring(0, 3);
+}
+
+function renderTodos(){
+  var el = document.getElementById('todoList');
+  if(!el) return;
+  if(!loaded){
+    el.innerHTML = '<div class="empty">' + escHtml(t('loading')) + '</div>';
+    return;
+  }
+  var start = new Date();
+  start.setHours(0,0,0,0);
+  var end = new Date(start);
+  end.setDate(end.getDate() + 30);
+  var startS = ymd(start), endS = ymd(end);
+
+  var list = [];
+  for(var i = 0; i < events.length; i++){
+    var ds = events[i].date;
+    if(ds >= startS && ds <= endS) list.push(events[i]);
+  }
+  list.sort(function(x, y){
+    if(x.date !== y.date) return x.date < y.date ? -1 : 1;
+    var a = sortKey(x), b = sortKey(y);
+    return a < b ? -1 : (a > b ? 1 : 0);
+  });
+
+  if(list.length === 0){
+    el.innerHTML = '<div class="empty">' + escHtml(t('no_upcoming')) + '</div>';
+    return;
+  }
+
+  var html = '';
+  var last = '';
+  for(var j = 0; j < list.length; j++){
+    var ev = list[j];
+    if(ev.date !== last){
+      last = ev.date;
+      html += '<div class="dateh">' + escHtml(dateLabel(ev.date)) + '</div>';
+    }
+    var tl = timeLabel(ev);
+    html += '<a class="todo" href="/cgi-bin/calendar.cgi">' +
+            (tl ? '<span class="time">' + escHtml(tl) + '</span>' : '') +
+            '<span class="tx">' + escHtml(ev.title) + '</span></a>';
+  }
+  el.innerHTML = html;
+}
+
+function renderAll(){
+  renderCalendar();
+  renderToday();
+  renderTodos();
+}
+
+function prevMonth(){ selDate = null; calCur.setMonth(calCur.getMonth() - 1); renderCalendar(); renderToday(); }
+function nextMonth(){ selDate = null; calCur.setMonth(calCur.getMonth() + 1); renderCalendar(); renderToday(); }
+
+window.onload = function(){
+  applyLang(getLang());
+  loadCalendar();
+  loadBadge();
+};
+</script>
+</body></html>
