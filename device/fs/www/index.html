@@ -402,7 +402,7 @@ function renderTodos(){
       html += '<div class="dateh">' + escHtml(dateLabel(ev.date)) + '</div>';
     }
     var tl = timeLabel(ev);
-    html += '<a class="todo" href="/cgi-bin/calendar.cgi">' +
+    html += '<a class="todo" href="/cgi-bin/calendar.cgi?edit=' + encodeURIComponent(ev.origId || ev.id) + '&date=' + encodeURIComponent(ev.date) + '">' +
             (tl ? '<span class="time">' + escHtml(tl) + '</span>' : '') +
             '<span class="tx">' + escHtml(ev.title) + '</span></a>';
   }
